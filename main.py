@@ -4,6 +4,24 @@ import cv2
 from time import sleep
 import yaml
 import os
+import sqlite3
+
+databaseFilePath = "plate.db"
+if os.path.isfile(databaseFilePath):
+	print("database file found at, ", databaseFilePath)
+else:
+	print("could not find", databaseFilePath)
+	print("creating new database... ")
+	connection = sqlite3.connect(databaseFilePath)
+	cursor = connection.cursor()
+	command = """
+	CREATE TABLE plates (
+	plateNumber VARCHAR(10),
+	dateTime VARCHAR(30));"""
+	cursor.execute(command)
+	connection.commit()
+	connection.close()
+	print("done")	
 
 configFilePath = "config.yml"
 if os.path.isfile(configFilePath):
@@ -24,7 +42,8 @@ def processFeed(videoSourceURL, progStatus):
 		print("Alpr failed to load")
 		return -1
 
-	alpr.set_top_n(5) #only return top five results
+	#alpr.set_top_n(5) #only return top five results
+	alpr.set_top_n(1) # only return the best result
 
 	cam = cv2.VideoCapture()
 	cam.open(videoSourceURL)
@@ -46,6 +65,7 @@ def processFeed(videoSourceURL, progStatus):
 		i = 0
 		for plate in results['results']:
 			i += 1
+			print("Camera ", videoSourceURL)
 			print("Plate #%d" % i)
 			print("    %12s %12s" % ("Plate", "Confidence"))
 			for candidate in plate['candidates']:
