@@ -20,6 +20,7 @@ else:
 	plateNumber VARCHAR(10),
 	plateConfidence VARCHAR(10),
 	cameraLocation VARCHAR(30),
+	cameraName VARCHAR(30),
 	dateTime VARCHAR(30));"""
 	cursor.execute(command)
 	connection.commit()
@@ -39,7 +40,7 @@ alprRuntime = "/home/bkennedy/openalpr/runtime_data" #not missing us config file
 
 progTerminate = Value('i', 0)
 
-def processFeed(videoSourceURL, progStatus):
+def processFeed(videoSourceURL, cameraName, progStatus):
 	connection = sqlite3.connect(databaseFilePath)
 	cursor = connection.cursor()
 
@@ -48,22 +49,21 @@ def processFeed(videoSourceURL, progStatus):
 		print("Alpr failed to load")
 		return -1
 
-	#alpr.set_top_n(5) #only return top five results
 	alpr.set_top_n(1) # only return the best result
 
 	cam = cv2.VideoCapture()
 	cam.open(videoSourceURL)
 
 	if cam.isOpened():
-		print("camera ", videoSourceURL, " operational")
+		print("camera ", cameraName, videoSourceURL, " operational")
 	else:
-		print("camera ", videoSourceURL, "  unavailable")
+		print("camera ", cameraName, videoSourceURL, "  unavailable")
 		return -1
 
 	while not progStatus.value:
 		ret, frame = cam.read()
 		if not ret:
-			print("Failed to retreive frame from ", videoSourceURL)
+			print("Failed to retreive frame from ", cameraName, videoSourceURL)
 			return -1
 			
 		results = alpr.recognize_ndarray(frame) #scan an numpy array
@@ -71,7 +71,7 @@ def processFeed(videoSourceURL, progStatus):
 		i = 0
 		for plate in results['results']:
 			i += 1
-			print("Camera ", videoSourceURL)
+			print("Camera ", cameraName, videoSourceURL)
 			print("Plate #%d" % i)
 			print("    %12s %12s" % ("Plate", "Confidence"))
 			for candidate in plate['candidates']:
@@ -81,7 +81,7 @@ def processFeed(videoSourceURL, progStatus):
 	
 				print("  %s %12s%12f" % (prefix, candidate['plate'], candidate['confidence']))
 
-				command = """INSERT INTO plates (plateNumber, plateConfidence, cameraLocation, dateTime) VALUES ("{}", "{}", "{}", "{}");""".format(candidate['plate'], candidate['confidence'], videoSourceURL, datetime.datetime.now())
+				command = """INSERT INTO plates (plateNumber, plateConfidence, cameraLocation, cameraName, dateTime) VALUES ("{}", "{}", "{}", "{}", "{}");""".format(candidate['plate'], candidate['confidence'], videoSourceURL, cameraName, datetime.datetime.now())
 				cursor.execute(command)
 				connection.commit()
 
@@ -93,15 +93,26 @@ def processFeed(videoSourceURL, progStatus):
 with open(configFilePath, 'r') as stream:
 	config = yaml.load(stream)
 
+"""
 processes = {}
 for address in config['cameraAddresses']:
 	processes[address] = Process(target=processFeed, args=(address, progTerminate,))
 	processes[address].start()
+"""
+processes = {}
+for pair in config['cameraAddresses']:
+	for name in pair:
+		processes[name] = Process(target=processFeed, args=(pair[name], name, progTerminate,))
+		processes[name].start()
 
 sleep(5)
 progTerminate.value = 1
 
+"""
 for address in config['cameraAddresses']:
 	processes[address].join()
-
+"""
+for pair in config['cameraAddresses']:
+	for name in pair:
+		processes[name].join()
 print("done")
