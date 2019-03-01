@@ -5,6 +5,7 @@ from time import sleep
 import yaml
 import os
 import sqlite3
+import datetime
 
 databaseFilePath = "plate.db"
 if os.path.isfile(databaseFilePath):
@@ -17,6 +18,8 @@ else:
 	command = """
 	CREATE TABLE plates (
 	plateNumber VARCHAR(10),
+	plateConfidence VARCHAR(10),
+	cameraLocation VARCHAR(30),
 	dateTime VARCHAR(30));"""
 	cursor.execute(command)
 	connection.commit()
@@ -37,6 +40,9 @@ alprRuntime = "/home/bkennedy/openalpr/runtime_data" #not missing us config file
 progTerminate = Value('i', 0)
 
 def processFeed(videoSourceURL, progStatus):
+	connection = sqlite3.connect(databaseFilePath)
+	cursor = connection.cursor()
+
 	alpr = Alpr("us", alprConf, alprRuntime)
 	if not alpr.is_loaded():
 		print("Alpr failed to load")
@@ -75,6 +81,11 @@ def processFeed(videoSourceURL, progStatus):
 	
 				print("  %s %12s%12f" % (prefix, candidate['plate'], candidate['confidence']))
 
+				command = """INSERT INTO plates (plateNumber, plateConfidence, cameraLocation, dateTime) VALUES ("{}", "{}", "{}", "{}");""".format(candidate['plate'], candidate['confidence'], videoSourceURL, datetime.datetime.now())
+				cursor.execute(command)
+				connection.commit()
+
+	connection.close()
 	alpr.unload()
 	cam.release()
 	return 0
