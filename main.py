@@ -93,12 +93,6 @@ def processFeed(videoSourceURL, cameraName, progStatus):
 with open(configFilePath, 'r') as stream:
 	config = yaml.load(stream)
 
-"""
-processes = {}
-for address in config['cameraAddresses']:
-	processes[address] = Process(target=processFeed, args=(address, progTerminate,))
-	processes[address].start()
-"""
 processes = {}
 for pair in config['cameraAddresses']:
 	for name in pair:
@@ -108,10 +102,6 @@ for pair in config['cameraAddresses']:
 sleep(5)
 progTerminate.value = 1
 
-"""
-for address in config['cameraAddresses']:
-	processes[address].join()
-"""
 for pair in config['cameraAddresses']:
 	for name in pair:
 		processes[name].join()
