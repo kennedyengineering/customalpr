@@ -6,6 +6,17 @@ import yaml
 import os
 import sqlite3
 import datetime
+import signal
+
+class GracefulKiller:
+	kill_now = False
+	def __init__(self):
+		signal.signal(signal.SIGINT, self.exit_gracefully)
+		signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+	def exit_gracefully(self,signum, frame):
+		self.kill_now = True
+
 
 databaseFilePath = "plate.db"
 if os.path.isfile(databaseFilePath):
@@ -99,10 +110,14 @@ for pair in config['cameraAddresses']:
 		processes[name] = Process(target=processFeed, args=(pair[name], name, progTerminate,))
 		processes[name].start()
 
-sleep(5)
-progTerminate.value = 1
+shutdownStatus = GracefulKiller()
 
-for pair in config['cameraAddresses']:
-	for name in pair:
-		processes[name].join()
-print("done")
+while 1:
+	if shutdownStatus.kill_now:
+		progTerminate.value = 1
+
+		for pair in config['cameraAddresses']:
+			for name in pair:
+				processes[name].join()
+		print("done")
+		exit(0)
