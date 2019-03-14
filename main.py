@@ -7,6 +7,7 @@ import os
 import sqlite3
 import datetime
 import signal
+import socket
 
 class GracefulKiller:
 	kill_now = False
@@ -32,7 +33,8 @@ else:
 	plateConfidence VARCHAR(10),
 	cameraLocation VARCHAR(30),
 	cameraName VARCHAR(30),
-	dateTime VARCHAR(30));"""
+	dateTime VARCHAR(30),
+	imageURL VARCHAR(40));"""
 	cursor.execute(command)
 	connection.commit()
 	connection.close()
@@ -48,6 +50,8 @@ else:
 alprConf = "/etc/openalpr/openalpr.conf"
 #alprRuntime = "/usr/share/openalpr/runtime_data" #missing us config file
 alprRuntime = "/home/bkennedy/openalpr/runtime_data" #not missing us config file
+
+hostname = socket.gethostname()
 
 progTerminate = Value('i', 0)
 
@@ -91,8 +95,15 @@ def processFeed(videoSourceURL, cameraName, progStatus):
 					prefix = "*"
 	
 				print("  %s %12s%12f" % (prefix, candidate['plate'], candidate['confidence']))
+				
+				fileName = (str(cameraName) + " " + str(datetime.datetime.now()).replace(".", " ") + ".png").replace(" ", "_")
 
-				command = """INSERT INTO plates (plateNumber, plateConfidence, cameraLocation, cameraName, dateTime) VALUES ("{}", "{}", "{}", "{}", "{}");""".format(candidate['plate'], candidate['confidence'], videoSourceURL, cameraName, datetime.datetime.now())
+				saveLocation = "/var/www/html/capturedImages/" + fileName
+				cv2.imwrite(saveLocation, frame)
+
+				imageURL = str(hostname) + "/capturedImages/" + fileName
+
+				command = """INSERT INTO plates (plateNumber, plateConfidence, cameraLocation, cameraName, dateTime, imageURL) VALUES ("{}", "{}", "{}", "{}", "{}", "{}");""".format(candidate['plate'], candidate['confidence'], videoSourceURL, cameraName, datetime.datetime.now(), imageURL)
 				cursor.execute(command)
 				connection.commit()
 
