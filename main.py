@@ -84,22 +84,28 @@ def processFeed(videoSourceURL, cameraName, progStatus):
 		results = alpr.recognize_ndarray(frame) #scan an numpy array
 	
 		i = 0
+		if results['results']:
+			print()
+			print("Camera", cameraName, videoSourceURL)
 		for plate in results['results']:
 			i += 1
-			print("Camera ", cameraName, videoSourceURL)
+			#print()
+			#print("Camera", cameraName, videoSourceURL)
 			print("Plate #%d" % i)
 			print("    %12s %12s" % ("Plate", "Confidence"))
-			for candidate in plate['candidates']:
+			for candidate in plate['candidates']: #should be only one per plate
 				prefix = "-"
 				if candidate['matches_template']:
 					prefix = "*"
 	
 				print("  %s %12s%12f" % (prefix, candidate['plate'], candidate['confidence']))
-				
+			
+	
 				fileName = (str(cameraName) + " " + str(datetime.datetime.now()).replace(".", " ") + ".png").replace(" ", "_")
 
 				saveLocation = "/var/www/html/capturedImages/" + fileName
-				cv2.imwrite(saveLocation, frame)
+				print("saving as "+fileName)
+				#cv2.imwrite(saveLocation, frame)
 
 				imageURL = str(hostname) + "/capturedImages/" + fileName
 
