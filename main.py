@@ -6,7 +6,6 @@ import sqlite3
 import signal
 from cameraThread import processFeed
 
-
 class GracefulKiller:
     kill_now = False
 
@@ -16,7 +15,6 @@ class GracefulKiller:
 
     def exit_gracefully(self, signum, frame):
         self.kill_now = True
-
 
 databaseFilePath = "plate.db"
 if os.path.isfile(databaseFilePath):
@@ -71,5 +69,6 @@ while 1:
         for pair in config['cameraAddresses']:
             for name in pair:
                 processes[name].join()
+
         print("done")
         exit(0)
