@@ -1,10 +1,22 @@
 import sqlite3
 import socket
+import math
 from openalpr import Alpr
 import cv2
 import datetime
 from plateThread import plateLifespan
 import Levenshtein as lev
+
+def matchStringToArray(string, stringArray):
+    bestMatch = math.inf
+    bestString = ""
+    for i in stringArray:
+            distance = lev.distance(string, i)
+            if distance < bestMatch:    #does not compensate for two equal best distances!!!
+                    bestMatch = distance
+                    bestString = i
+    return bestString
+
 
 def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, databaseFilePath):
     hostname = socket.gethostname()
@@ -31,6 +43,9 @@ def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, d
     previousPlateQuantity = None
     currentPlateQuantity = None
 
+    lifeSpanList = []
+    currentPlateNumberList = []
+
     ### main loop ###
     while not progStatus.value:
         # handle image feed
@@ -40,7 +55,7 @@ def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, d
             return -1
 
         # openalpr scan numpy array
-        results = alpr.recognize_ndarray(frame)  # scan an numpy array
+        results = alpr.recognize_ndarray(frame)  # scan an numpy array for license plates
 
         ### printing outputs ###
         i = 0
@@ -57,28 +72,71 @@ def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, d
                     prefix = "*"
 
                 print("  %s %12s%12f" % (prefix, candidate['plate'], candidate['confidence']))
+                currentPlateNumberList.append(candidate['plate'])
         ### done printing outputs ###
 
         #print(i)
+        #for i in currentPlateNumberList:
+        #    print(i)
 
         ### handle lifespans ###
         currentPlateQuantity = i
-        if previousPlateQuantity != None:
-            #create filter? boolean estimation based on current and previous...
+        if (previousPlateQuantity == None) and (currentPlateQuantity != None): #previousPlateQuantity should never equal None after the first plate is detected
+            #create first lifespan!
+            print("Found first plate")
+            for plateNumber in currentPlateNumberList: #create new plateLifespan objects for each plate number
+                lifeSpanList.append(plateLifespan(plateNumber, frame, cameraName, videoSourceURL, databaseFilePath))
+
+        elif previousPlateQuantity != None:
+            #create filter? boolean estimation based on current and previous... no, just use certainty to filter if anything
             if currentPlateQuantity == previousPlateQuantity:
                 #string matching probability function, with cut off
                 #match plates to their pre-existing plate objects. continue life span
                 #use Levenshtein distance
-                pass
+                print("No new plates in this frame")
+                #access list of plates, match with lifespans
+                #continue living...
+                #for plateNumber in currentPlateNumberList:
+                #    #match string returns bestString
+
+                #   bestString = matchStringToArray(plateNumber, )
+                for span in lifeSpanList:
+                    bestNumber = matchStringToArray(span.number, currentPlateNumberList)
+                    span.newSighting(bestNumber, frame)
+                    currentPlateNumberList.remove(bestNumber) #if there are two identical numbers, will remove the first one in the list  # shouldnt be any members in the list after this loop
             else:
                 if currentPlateQuantity > previousPlateQuantity:
                     #create new plate object
-                    pass
+                    #find out which number is the new one
+                    print("Found new plate")
+                    for span in lifeSpanList:   #match plates to spans
+                        bestNumber = matchStringToArray(span.number, currentPlateNumberList)
+                        span.newSighting(bestNumber, frame)
+                        currentPlateNumberList.remove(bestNumber)
+
+                    for plateNumber in currentPlateNumberList: #remaining numbers are new ones
+                        lifeSpanList.append(plateLifespan(plateNumber, frame, cameraName, videoSourceURL, databaseFilePath))
+
                 if currentPlateQuantity < previousPlateQuantity:
                     #find which plates lifespan to end
                     # get date from lifespan and put into database
-                    pass
+                    # find out which one is missing
+                    missingList = lifeSpanList
+                    print("Lost a plate")
+                    for span in lifeSpanList:
+                        bestNumber = matchStringToArray(span.number, currentPlateNumberList)
+                        span.newSighting(bestNumber, frame)
+                        currentPlateNumberList.remove(bestNumber)
+                        missingList.remove(span)
+
+                    for span in missingList:
+                        # DIE!!!
+                        # implement kill function! data handler
+                        span.logData()
+                        lifeSpanList.remove(span)
+
         previousPlateQuantity = currentPlateQuantity
+        currentPlateNumberList = [] #make sure it is empty!
 
         xxxx =  '''
                 fileName = (str(cameraName) + " " + str(datetime.datetime.now()).replace(".", " ") + ".png").replace(
