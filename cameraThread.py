@@ -81,7 +81,7 @@ def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, d
 
         ### handle lifespans ###
         currentPlateQuantity = i
-        if (previousPlateQuantity == None) and (currentPlateQuantity != None): #previousPlateQuantity should never equal None after the first plate is detected
+        if (previousPlateQuantity == None) and (currentPlateQuantity != 0): #previousPlateQuantity should never equal None after the first plate is detected
             #create first lifespan!
             print("Found first plate")
             for plateNumber in currentPlateNumberList: #create new plateLifespan objects for each plate number
@@ -89,7 +89,7 @@ def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, d
 
         elif previousPlateQuantity != None:
             #create filter? boolean estimation based on current and previous... no, just use certainty to filter if anything
-            if currentPlateQuantity == previousPlateQuantity:
+            if (currentPlateQuantity == previousPlateQuantity) and (currentPlateQuantity != 0):
                 #string matching probability function, with cut off
                 #match plates to their pre-existing plate objects. continue life span
                 #use Levenshtein distance
@@ -117,7 +117,7 @@ def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, d
                     for plateNumber in currentPlateNumberList: #remaining numbers are new ones
                         lifeSpanList.append(plateLifespan(plateNumber, frame, cameraName, videoSourceURL, databaseFilePath))
 
-                if currentPlateQuantity < previousPlateQuantity:
+                elif currentPlateQuantity < previousPlateQuantity:
                     #find which plates lifespan to end
                     # get date from lifespan and put into database
                     # find out which one is missing
@@ -126,7 +126,7 @@ def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, d
                     for span in lifeSpanList:
                         bestNumber = matchStringToArray(span.number, currentPlateNumberList)
                         span.newSighting(bestNumber, frame)
-                        currentPlateNumberList.remove(bestNumber)
+                        # currentPlateNumberList.remove(bestNumber)
                         missingList.remove(span)
 
                     for span in missingList:
@@ -135,8 +135,13 @@ def processFeed(videoSourceURL, cameraName, progStatus, alprRuntime, alprConf, d
                         span.logData()
                         lifeSpanList.remove(span)
 
-        previousPlateQuantity = currentPlateQuantity
+        if (currentPlateQuantity == 0) and (previousPlateQuantity == None):
+            pass
+        else:
+            previousPlateQuantity = currentPlateQuantity
+
         currentPlateNumberList = [] #make sure it is empty!
+
 
         xxxx =  '''
                 fileName = (str(cameraName) + " " + str(datetime.datetime.now()).replace(".", " ") + ".png").replace(
