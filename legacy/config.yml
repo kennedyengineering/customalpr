@@ -1,0 +1,7 @@
+cameraAddresses:
+   - AXIS1: http:/root:pass@10.10.1.175/mjpg/1/video.mjpg
+   - AXIS2: http:/root:pass@10.10.1.230/mjpg/1/video.mjpg
+   #- HIK1: http://admin:activeALPR@10.10.1.58/Streaming/channels/101/preview
+   - TESTVIDEO: "test_clip.MOV"
+   - HIK2: rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/
+
