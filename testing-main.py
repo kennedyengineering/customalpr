@@ -1,25 +1,97 @@
 import cv2
 from openalpr import Alpr
 import numpy as np
+from threading import Thread
+import datetime
 
 #trackerType = 'KCF'
 #tracker = cv2.TrackerKCF_create()
 
 alprConf = "/etc/openalpr/openalpr.conf"
-alprRunTime = "/home/bkennedy/openalpr/runtime_data"
+alprRunTime = "/home/dev/openalpr/runtime_data" # MAKE SURE TO CHANGE THIS PATH!!!! should probably be automated
 alpr = Alpr("us", alprConf, alprRunTime)
 if not alpr.is_loaded():
 	print("Alpr failed to load")
 	exit()
 alpr.set_top_n(1)
 
-videoSource = "test_clip.MOV"
-cam = cv2.VideoCapture()
-cam.open(videoSource)
+class FPS:
+	#from pyImageSearch
+	def __init__(self):
+		# store the start time, end time, and total number of frames
+		# that were examined between the start and end intervals
+		self._start = None
+		self._end = None
+		self._numFrames = 0
 
-frameWidth = int(cam.get(3))
-frameHeight = int(cam.get(4))
-out = cv2.VideoWriter('out.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frameWidth, frameHeight))
+	def start(self):
+		# start the timer
+		self._start = datetime.datetime.now()
+		return self
+
+	def stop(self):
+		# stop the timer
+		self._end = datetime.datetime.now()
+
+	def update(self):
+		# increment the total number of frames examined during the
+		# start and end intervals
+		self._numFrames += 1
+
+	def elapsed(self):
+		# return the total number of seconds between the start and
+		# end interval
+		return (self._end - self._start).total_seconds()
+
+	def fps(self):
+		# compute the (approximate) frames per second
+		return self._numFrames / self.elapsed()
+
+class WebcamVideoStream:
+	# from pyImageSearch website
+	def __init__(self, src=0):
+		# initialize the video camera stream and read the first frame
+		# from the stream
+		self.stream = cv2.VideoCapture(src)
+		(self.grabbed, self.frame) = self.stream.read()
+
+		# initialize the variable used to indicate if the thread should
+		# be stopped
+		self.stopped = False
+
+	def start(self):
+		# start the thread to read frames from the video stream
+		Thread(target=self.update, args=()).start()
+		return self
+
+	def update(self):
+		# keep looping infinitely until the thread is stopped
+		while True:
+			# if the thread indicator variable is set, stop the thread
+			if self.stopped:
+				return
+
+			# otherwise, read the next frame from the stream
+			(self.grabbed, self.frame) = self.stream.read()
+
+	def read(self):
+		# return the frame most recently read
+		return self.frame
+
+	def stop(self):
+		# indicate that the thread should be stopped
+		self.stopped = True
+
+#videoSource = "test_clip.MOV"
+videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/"
+#cam = cv2.VideoCapture()
+#cam.open(videoSource)
+cam = WebcamVideoStream(src=videoSource).start()
+fps = FPS().start()
+
+#frameWidth = int(cam.get(3))
+#frameHeight = int(cam.get(4))
+#out = cv2.VideoWriter('out.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frameWidth, frameHeight))
 
 trackers = []
 
@@ -106,9 +178,12 @@ def overlap(a, b):
 		return False
 
 while 1:
-	ret, frame = cam.read()
-	if not ret:
-		break
+	frame = cam.read()
+	fps.update()
+	
+	#ret, frame = cam.read()
+	#if not ret:
+	#	break
 
 	results = alpr.recognize_ndarray(frame)
 
@@ -134,9 +209,11 @@ while 1:
 			
 			detectedRect.append(boundingRect) # list of all detected rects			
 
-		print("results")
+
+		#print("results")
 	else:
-		print("no results")
+		#print("no results")
+		pass
 
 	trackerBoxes = []
 
@@ -179,11 +256,19 @@ while 1:
 				trackers.append(tracker)
 
 
-			print("availableDetections: ", len(availableDetections))
-			print("detectedrect: ", len(detectedRect))
-			print("trackerboxes:", len(trackerBoxes))
+			#print("availableDetections: ", len(availableDetections))
+			#print("detectedrect: ", len(detectedRect))
+			#print("trackerboxes:", len(trackerBoxes))
 
-	out.write(frame)
+	#out.write(frame)
+	cv2.imshow('viewer', frame)
+	if cv2.waitKey(1) & 0xFF == ord('q'):
+		break
 
-cam.release()
-out.release()
+fps.stop()
+print(fps.fps())
+
+cam.stop()
+cv2.destroyAllWindows()
+#cam.release()
+#out.release()
