@@ -8,11 +8,14 @@ import getpass
 #trackerType = 'KCF'
 #tracker = cv2.TrackerKCF_create()
 
+print("loading Alpr")
 alprConf = "/etc/openalpr/openalpr.conf"
+print("Alpr config path: ", alprConf)
 #alprRunTime = "/home/dev/openalpr/runtime_data" # MAKE SURE TO CHANGE THIS PATH!!!! should probably be automated
 #could use config file, but this seems OK
 alprRunTime = "/home/" + str(getpass.getuser()) + "/openalpr/runtime_data"
 alpr = Alpr("us", alprConf, alprRunTime)
+print("Alpr runtime path: ", alprRunTime)
 if not alpr.is_loaded():
 	print("Alpr failed to load")
 	exit()
@@ -94,6 +97,8 @@ fps = FPS().start()
 #frameWidth = int(cam.get(3))
 #frameHeight = int(cam.get(4))
 #out = cv2.VideoWriter('out.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frameWidth, frameHeight))
+
+areasOfInterest = [(71, 736, 1758, 328)]
 
 trackers = []
 
@@ -187,36 +192,60 @@ while 1:
 	#if not ret:
 	#	break
 
-	results = alpr.recognize_ndarray(frame)
+	# break down frame into searchable and un searchable zones
+	# possibly increase FPS
+	# crop frame, should include in config file
+
+	area = areasOfInterest[0]
+	cv2.rectangle(frame, area, (100,100,255), 1, 1)
+	croppedFrame = frame[int(area[1]):int(area[1]+area[3]), int(area[0]):int(area[0]+area[2])]
+	#cv2.imshow("ROI", croppedFrame)
+
+	####
+	results = alpr.recognize_ndarray(croppedFrame)
 
 	detectedRect = []
-
+	#finds all rects in frame and stores in detectedRect
 	if results['results']:
 		for plate in results['results']:
 
 			# don't give buffer size here! do it after the tracker
 			# tracker returns the new rect, the inflate to find numbers with lpr
-			
-			leftBottom = (plate['coordinates'][3]['x'], plate['coordinates'][3]['y'])
-			rightBottom = (plate['coordinates'][2]['x'], plate['coordinates'][2]['y'])
-			rightTop = (plate['coordinates'][1]['x'], plate['coordinates'][1]['y'])
-			leftTop = (plate['coordinates'][0]['x'], plate['coordinates'][0]['y'])
+
+			# offset so points are relative to the frame, not cropped frame
+			leftBottom = (plate['coordinates'][3]['x'] + area[0], plate['coordinates'][3]['y'] + area[1])
+			rightBottom = (plate['coordinates'][2]['x'] + area[0], plate['coordinates'][2]['y'] + area[1])
+			rightTop = (plate['coordinates'][1]['x'] + area[0], plate['coordinates'][1]['y'] + area[1])
+			leftTop = (plate['coordinates'][0]['x'] + area[0], plate['coordinates'][0]['y'] + area[1])
 
 			allPoints = np.array([leftBottom,rightBottom,leftTop,rightTop])
 			boundingRect = cv2.boundingRect(allPoints)	#X, Y, W, H
-			cv2.rectangle(frame, boundingRect, (0, 255, 0), 3)
-			
-			for coordinate in plate['coordinates']:
-				cv2.circle(frame, (coordinate['x'], coordinate['y']), 4, (0, 255, 0), -1)
-			
-			detectedRect.append(boundingRect) # list of all detected rects			
+			cv2.rectangle(frame, boundingRect, (0, 255, 0), 2)
 
-
+			#for coordinate in plate['coordinates']:
+			#	cv2.circle(frame, (coordinate['x'], coordinate['y']), 4, (0, 255, 0), -1)
+			for rect in detectedRect:
+				if overlap(rect, boundingRect) or overlap(boundingRect, rect):
+					pass
+				else:
+					detectedRect.append(boundingRect) # list of all detected rects
+					break
 		#print("results")
 	else:
 		#print("no results")
 		pass
 
+	# now that detectedRect is filled, remove any possible double detections
+	# ensure there is one rect per plate
+	detectedRectCopy = detectedRect
+	for rect1 in detectedRect:
+		for rect2 in detectedRectCopy:
+			pass
+			# just do this when they are detected
+
+	# temporarily removing trackers
+	####
+	'''
 	trackerBoxes = []
 
 	for tracker in trackers:
@@ -261,14 +290,19 @@ while 1:
 			#print("availableDetections: ", len(availableDetections))
 			#print("detectedrect: ", len(detectedRect))
 			#print("trackerboxes:", len(trackerBoxes))
+	'''
+	#####
+	#
 
+	# show output
 	#out.write(frame)
 	cv2.imshow('viewer', frame)
 	if cv2.waitKey(1) & 0xFF == ord('q'):
 		break
 
+#print average FPS when program terminated
 fps.stop()
-print(fps.fps())
+print(fps.fps(), "FPS")
 
 cam.stop()
 cv2.destroyAllWindows()
