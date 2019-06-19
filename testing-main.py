@@ -3,12 +3,15 @@ from openalpr import Alpr
 import numpy as np
 from threading import Thread
 import datetime
+import getpass
 
 #trackerType = 'KCF'
 #tracker = cv2.TrackerKCF_create()
 
 alprConf = "/etc/openalpr/openalpr.conf"
-alprRunTime = "/home/dev/openalpr/runtime_data" # MAKE SURE TO CHANGE THIS PATH!!!! should probably be automated
+#alprRunTime = "/home/dev/openalpr/runtime_data" # MAKE SURE TO CHANGE THIS PATH!!!! should probably be automated
+#could use config file, but this seems OK
+alprRunTime = "/home/" + str(getpass.getuser()) + "/openalpr/runtime_data"
 alpr = Alpr("us", alprConf, alprRunTime)
 if not alpr.is_loaded():
 	print("Alpr failed to load")
@@ -46,7 +49,6 @@ class FPS:
 	def fps(self):
 		# compute the (approximate) frames per second
 		return self._numFrames / self.elapsed()
-
 class WebcamVideoStream:
 	# from pyImageSearch website
 	def __init__(self, src=0):
@@ -180,7 +182,7 @@ def overlap(a, b):
 while 1:
 	frame = cam.read()
 	fps.update()
-	
+
 	#ret, frame = cam.read()
 	#if not ret:
 	#	break
