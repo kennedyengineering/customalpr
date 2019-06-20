@@ -5,9 +5,6 @@ from threading import Thread
 import datetime
 import getpass
 
-#trackerType = 'KCF'
-#tracker = cv2.TrackerKCF_create()
-
 print("loading Alpr")
 alprConf = "/etc/openalpr/openalpr.conf"
 print("Alpr config path: ", alprConf)
@@ -91,8 +88,18 @@ videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/
 cam = WebcamVideoStream(src=videoSource).start()
 fps = FPS().start()
 
+class licensePlate():
+	# a simple object to hold the necessary data, and make things easier
+	def __init__(self, number, image, time, cameraName, detectorBoxName):
+		self.number = number
+		self.image = image
+		self.timeSpotted = time
+		self.cameraName = cameraName
+		self.detectorName = detectorBoxName
+
 class detectionBox():
-	def __init__(self, name, area, webcamReference, alprconfig, alprruntime):
+	def __init__(self, cameraName, name, area, webcamReference, alprconfig, alprruntime):
+		self.cameraName = cameraName
 		self.name = name
 		self.area = area # bounding box for the search
 		self.stream = webcamReference # reference to the video feed
@@ -105,6 +112,9 @@ class detectionBox():
 		self.fps = FPS().start()
 
 		self.stopped = False
+
+		# stores licensplate objects
+		self.licenseplateList = []
 
 	def start(self):
 		Thread(target=self.update, args=()).start()
@@ -129,7 +139,7 @@ class detectionBox():
 			if results['results']:
 				for plate in results['results']:
 
-					# offset so points are relative to the frame, not cropped frame
+					# offset so points are relative to the frame, not cropped frame, use to find bounding rect
 					leftBottom = (plate['coordinates'][3]['x'] + self.area[0], plate['coordinates'][3]['y'] + self.area[1])
 					rightBottom = (plate['coordinates'][2]['x'] + self.area[0], plate['coordinates'][2]['y'] + self.area[1])
 					rightTop = (plate['coordinates'][1]['x'] + self.area[0], plate['coordinates'][1]['y'] + self.area[1])
@@ -138,27 +148,20 @@ class detectionBox():
 					allPoints = np.array([leftBottom, rightBottom, leftTop, rightTop])
 					boundingRect = cv2.boundingRect(allPoints)  # X, Y, W, H
 
-					# draw rect and corner points
-					#cv2.rectangle(frame, boundingRect, (0, 255, 0), 2)
-					#for coordinate in plate['coordinates']:
-					#	cv2.circle(frame, (coordinate['x'], coordinate['y']), 4, (0, 255, 0), -1)
-					# move to draw method
-
-					#for rect in detectedRect:
-					#	if overlap(rect, boundingRect) or overlap(boundingRect, rect):
-					#		pass
-					#	else:
-					#		detectedRect.append(boundingRect)  # list of all detected rects
-					#		break
 					detectedRect.append(boundingRect)
+
+					# convert lpr results into a licenseplate object and store in licenseplatelist
+					plateNumber = plate['plate']
+					plateImage = frame[int(boundingRect[1]):int(boundingRect[1] + boundingRect[3]), int(boundingRect[0]):int(boundingRect[0] + boundingRect[2])]
+					plateTime = datetime.datetime.now()
+					newPlate = licensePlate(plateNumber, plateImage, plateTime, self.cameraName, self.name)
+					self.licenseplateList.append(newPlate)
 
 				self.oldDetectedRect = detectedRect # this way, detectedRect will be erased and operated on but oldDetectedRect will always have something in it
 
-				#print("results on", self.name)
 			else:
-				#print("no results")
+				# no results
 				self.oldDetectedRect = []
-				#pass
 
 	def draw(self, frame):
 		# return frame with drawings on it
@@ -190,7 +193,7 @@ class detectionBox():
 areasOfInterest = {"IN":(232, 614, 643, 455), "OUT":(997, 682, 843, 384)}
 detectionBoxes = []
 for searchbox in areasOfInterest:
-	newBox = detectionBox(searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime).start()
+	newBox = detectionBox("LPR CAMERA", searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime).start()
 	detectionBoxes.append(newBox)
 
 def overlap(a, b):
@@ -278,6 +281,7 @@ def overlap(a, b):
 gui = True # should be a flag, or have default be set in config
 if gui:
 	print("Starting in GUI mode")
+	print("press 'q' to exit")
 	print()
 else:
 	print("Starting in CONSOLE mode")
@@ -286,6 +290,7 @@ else:
 
 usableCommands = {"help": "show all usable commands", "q": "quit the program"}
 
+# main loop
 while 1:
 	# main thread, handle GUI and clean exit
 
