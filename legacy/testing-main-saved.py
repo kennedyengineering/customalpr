@@ -11,15 +11,15 @@ import getpass
 print("loading Alpr")
 alprConf = "/etc/openalpr/openalpr.conf"
 print("Alpr config path: ", alprConf)
+#alprRunTime = "/home/dev/openalpr/runtime_data" # MAKE SURE TO CHANGE THIS PATH!!!! should probably be automated
+#could use config file, but this seems OK
 alprRunTime = "/home/" + str(getpass.getuser()) + "/openalpr/runtime_data"
+#alpr = Alpr("us", alprConf, alprRunTime)
 print("Alpr runtime path: ", alprRunTime)
-alpr = Alpr("us", alprConf, alprRunTime)
-if not alpr.is_loaded():
-	print("Alpr failed to load")
-	exit()
-else:
-	print("Alpr loaded successfully")
-	del alpr # just for testing!!!
+#if not alpr.is_loaded():
+#	print("Alpr failed to load")
+#	exit()
+#alpr.set_top_n(1)
 
 class FPS:
 	#from pyImageSearch
@@ -87,20 +87,27 @@ class WebcamVideoStream:
 		# indicate that the thread should be stopped
 		self.stopped = True
 
-videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/" # bring from config file. Allow for multiple cameras
+#videoSource = "test_clip.MOV"
+videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/"
+#cam = cv2.VideoCapture()
+#cam.open(videoSource)
 cam = WebcamVideoStream(src=videoSource).start()
 fps = FPS().start()
+
+#frameWidth = int(cam.get(3))
+#frameHeight = int(cam.get(4))
+#out = cv2.VideoWriter('out.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frameWidth, frameHeight))
 
 class detectionBox():
 	def __init__(self, name, area, webcamReference, alprconfig, alprruntime):
 		self.name = name
 		self.area = area # bounding box for the search
-		self.stream = webcamReference # reference to the video feed
+		self.stream = webcamReference
+		#self.detectedRect = []
 		self.oldDetectedRect = []
 
 		# threads cannot share alpr object, needs its own
 		self.alpr = Alpr("us", alprconfig, alprruntime)
-		self.alpr.set_top_n(1)
 
 		self.fps = FPS().start()
 
@@ -164,7 +171,7 @@ class detectionBox():
 		# return frame with drawings on it
 		# draw plates detected and bounding boxes
 		# is this necessary? The bounding boxes of the search areas should not overlap
-		# should check for overlapping bounding boxes in constructor
+		# should check for overlapping bounding boxes
 
 		# draw plates detected
 		# print(len(self.oldDetectedRect))
@@ -174,9 +181,7 @@ class detectionBox():
 
 		# no need to draw corner points
 
-		# draw search box and name
-		cv2.putText(frame, self.name, (self.area[0], self.area[1]-5),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.7, (15, 15, 255), 2)
+		# draw search box
 		cv2.rectangle(frame, self.area, (0, 0, 255), 2)
 
 		# return drawn frame
@@ -187,11 +192,14 @@ class detectionBox():
 		print(self.name, "FPS: ", self.fps.fps())
 		self.stopped = True
 
+#areasOfInterest = [(71, 736, 1758, 328)]
 areasOfInterest = {"IN":(232, 614, 643, 455), "OUT":(997, 682, 843, 384)}
 detectionBoxes = []
 for searchbox in areasOfInterest:
 	newBox = detectionBox(searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime).start()
 	detectionBoxes.append(newBox)
+
+#trackers = []
 
 def overlap(a, b):
 	# x,y,w,h
@@ -275,40 +283,126 @@ def overlap(a, b):
 	else:
 		return False
 
-gui = True # should be a flag, or have default be set in config
-if gui:
-	print("Starting in GUI mode")
-	print()
-else:
-	print("Starting in CONSOLE mode")
-	print("type 'help' for a list of commands")
-	print()
-
-usableCommands = {"help": "show all usable commands", "q": "quit the program"}
-
 while 1:
-	# main thread, handle GUI and clean exit
+	frame = cam.read()
+	fps.update()
 
-	if gui:
-		frame = cam.read()
-		fps.update()
+	for box in detectionBoxes:
+		frame = box.draw(frame)
+		# results in laggy drawings because the processing threads are using older frames, and drawing according to those frames. The actual tagging is not incorrect
+		# this is fine for now, but is a little annoying
 
-		for box in detectionBoxes:
-			frame = box.draw(frame)
+	#ret, frame = cam.read()
+	#if not ret:
+	#	break
 
-		cv2.imshow('viewer', frame)
-		if cv2.waitKey(1) & 0xFF == ord('q'):
-			break
+	# break down frame into searchable and un searchable zones
+	# possibly increase FPS
+	# crop frame, should include in config file
+
+	#area = areasOfInterest[0]
+	#cv2.rectangle(frame, area, (100,100,255), 1, 1)
+	#croppedFrame = frame[int(area[1]):int(area[1]+area[3]), int(area[0]):int(area[0]+area[2])]
+	#cv2.imshow("ROI", croppedFrame)
+
+	####
+	#results = alpr.recognize_ndarray(croppedFrame)
+
+	#detectedRect = []
+	#finds all rects in frame and stores in detectedRect
+	'''if results['results']:
+		for plate in results['results']:
+
+			# don't give buffer size here! do it after the tracker
+			# tracker returns the new rect, the inflate to find numbers with lpr
+
+			# offset so points are relative to the frame, not cropped frame
+			leftBottom = (plate['coordinates'][3]['x'] + area[0], plate['coordinates'][3]['y'] + area[1])
+			rightBottom = (plate['coordinates'][2]['x'] + area[0], plate['coordinates'][2]['y'] + area[1])
+			rightTop = (plate['coordinates'][1]['x'] + area[0], plate['coordinates'][1]['y'] + area[1])
+			leftTop = (plate['coordinates'][0]['x'] + area[0], plate['coordinates'][0]['y'] + area[1])
+
+			allPoints = np.array([leftBottom,rightBottom,leftTop,rightTop])
+			boundingRect = cv2.boundingRect(allPoints)	#X, Y, W, H
+			cv2.rectangle(frame, boundingRect, (0, 255, 0), 2)
+
+			#for coordinate in plate['coordinates']:
+			#	cv2.circle(frame, (coordinate['x'], coordinate['y']), 4, (0, 255, 0), -1)
+			for rect in detectedRect:
+				if overlap(rect, boundingRect) or overlap(boundingRect, rect):
+					pass
+				else:
+					detectedRect.append(boundingRect) # list of all detected rects
+					break
+		#print("results")
 	else:
-		command = input(">> ")
-		if command == "q":
-			break
-		elif command == "help":
-			for option in usableCommands:
-				print(option, " : ", usableCommands[option])
-			continue
+		#print("no results")
+		pass'''
+
+	# now that detectedRect is filled, remove any possible double detections
+	# ensure there is one rect per plate
+	'''detectedRectCopy = detectedRect
+	for rect1 in detectedRect:
+		for rect2 in detectedRectCopy:
+			pass
+			# just do this when they are detected
+	'''
+	# temporarily removing trackers
+	####
+	'''
+	trackerBoxes = []
+
+	for tracker in trackers:
+		ok, bbox = tracker.update(frame)
+		if not ok:
+			print("removing tracker")
+			trackers.remove(tracker)
+			# data base entry
 		else:
-			continue
+			bboxRect = (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))
+			trackerBoxes.append(bboxRect)
+			cv2.rectangle(frame, bboxRect, (255, 0, 0), 2, 1)
+
+	if len(trackers) == 0:
+		for rect in detectedRect:
+			print("creating tracker")
+			tracker = cv2.TrackerKCF_create()
+			tracker.init(frame, rect)
+			trackers.append(tracker)
+	else:
+
+		if len(trackers) >= len(detectedRect): ### SUCCESS!! One tracker per detection
+			pass
+		else:
+			availableDetections = []
+
+			for rect in detectedRect:
+				for box in trackerBoxes:
+					if overlap(box, rect) or overlap(rect, box):
+						break
+					else:
+						availableDetections.append(rect)
+						break
+
+			for rect in availableDetections:
+				print("creating other tracker")
+				tracker = cv2.TrackerKCF_create()
+				tracker.init(frame, rect)
+				trackers.append(tracker)
+
+
+			#print("availableDetections: ", len(availableDetections))
+			#print("detectedrect: ", len(detectedRect))
+			#print("trackerboxes:", len(trackerBoxes))
+	'''
+	#####
+	#
+
+	# show output
+	#out.write(frame)
+	cv2.imshow('viewer', frame)
+	if cv2.waitKey(1) & 0xFF == ord('q'):
+		break
 
 #kill all search box threads
 for box in detectionBoxes:
@@ -318,6 +412,7 @@ for box in detectionBoxes:
 fps.stop()
 print("main", "FPS: ", fps.fps())
 
-#stop camera, destroy gui
 cam.stop()
 cv2.destroyAllWindows()
+#cam.release()
+#out.release()
