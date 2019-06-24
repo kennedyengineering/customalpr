@@ -4,7 +4,9 @@ import numpy as np
 from threading import Thread
 import datetime
 import getpass
+import copy
 
+# check if alpr configuration files and install are OK
 print("loading Alpr")
 alprConf = "/etc/openalpr/openalpr.conf"
 print("Alpr config path: ", alprConf)
@@ -18,6 +20,7 @@ else:
 	print("Alpr loaded successfully")
 	del alpr # just for testing!!!
 
+# helper modules from
 class FPS:
 	#from pyImageSearch
 	def __init__(self):
@@ -116,6 +119,8 @@ class detectionBox():
 		# stores licensplate objects
 		self.licenseplateList = []
 
+		self.licenseplateService = licenseplateService(self).start()
+
 	def start(self):
 		Thread(target=self.update, args=()).start()
 		return self
@@ -156,6 +161,7 @@ class detectionBox():
 					plateTime = datetime.datetime.now()
 					newPlate = licensePlate(plateNumber, plateImage, plateTime, self.cameraName, self.name)
 					self.licenseplateList.append(newPlate)
+					self.licenseplateService.notify() # help out the poor thread
 
 				self.oldDetectedRect = detectedRect # this way, detectedRect will be erased and operated on but oldDetectedRect will always have something in it
 
@@ -188,9 +194,78 @@ class detectionBox():
 	def stop(self):
 		self.fps.stop()
 		print(self.name, "FPS: ", self.fps.fps())
+		self.licenseplateService.stop()
 		self.stopped = True
 
-areasOfInterest = {"IN":(232, 614, 643, 455), "OUT":(997, 682, 843, 384)}
+class licenseplateService():
+	def __init__(self, detectionboxreference):
+		self.detectionBoxReference = detectionboxreference
+
+		#copy.copy --> shallow copy
+		#copy.deepcopy --> deep copy
+
+		#start both as the same thing
+		self.lastLicenseplateList = self.detectionBoxReference.licenseplateList
+		self.currentLicenseplateList = self.lastLicenseplateList
+
+		#defintely not a speed problem!!!!
+		#785484 FPS!!!
+
+		self.stopped = False
+		self.notified = True
+
+	def start(self):
+		Thread(target=self.update, args=()).start()
+		return self
+
+	def update(self):
+		while True:
+			if self.stopped:
+				return
+
+			if self.notified:
+
+				# this means that a new license plate has been added to the list
+				self.notified = False
+				print("ON IT!", len(self.detectionBoxReference.licenseplateList))
+
+
+			'''
+			self.currentLicenseplateList = self.detectionBoxReference.licenseplateList
+
+			lastQuantity = len(self.lastLicenseplateList)
+			currentQuantity = len(self.currentLicenseplateList)
+
+			if currentQuantity != lastQuantity:
+				print(currentQuantity, lastQuantity, len(self.detectionBoxReference.licenseplateList))
+
+			self.lastLicenseplateList = self.currentLicenseplateList
+			'''
+
+			'''
+			if self.lastLicenseplateList == None:
+				self.lastLicenseplateList = self.currentLicenseplateList
+				continue
+			else:
+				lastQuantity = len(self.lastLicenseplateList)
+				currentQuantity = len(self.currentLicenseplateList)
+
+				if currentQuantity != lastQuantity:
+					print(currentQuantity, lastQuantity)
+
+				#if self.lastLicenseplateList != self.currentLicenseplateList:
+				#	print(len(self.currentLicenseplateList))
+
+			self.lastLicenseplateList = self.currentLicenseplateList
+			'''
+
+	def stop(self):
+		self.stopped = True
+
+	def notify(self):
+		self.notified = True
+
+areasOfInterest = {"IN":(232, 614, 643, 455)}#, "OUT":(997, 682, 843, 384)}
 detectionBoxes = []
 for searchbox in areasOfInterest:
 	newBox = detectionBox("LPR CAMERA", searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime).start()
