@@ -212,7 +212,7 @@ class licenseplateService():
 		#785484 FPS!!!
 
 		self.stopped = False
-		self.notified = True
+		self.notified = False
 
 	def start(self):
 		Thread(target=self.update, args=()).start()
@@ -354,8 +354,10 @@ def overlap(a, b):
 		return False
 
 gui = True # should be a flag, or have default be set in config
+guiResolution = (800,600)
 if gui:
 	print("Starting in GUI mode")
+	print("Resolution: ", guiResolution)
 	print("press 'q' to exit")
 	print()
 else:
@@ -367,7 +369,7 @@ usableCommands = {"help": "show all usable commands", "q": "quit the program"}
 
 # main loop
 while 1:
-	# main thread, handle GUI and clean exit
+	# main thread, handle UI and clean exit
 
 	if gui:
 		frame = cam.read()
@@ -376,6 +378,7 @@ while 1:
 		for box in detectionBoxes:
 			frame = box.draw(frame)
 
+		frame = cv2.resize(frame, guiResolution)
 		cv2.imshow('viewer', frame)
 		if cv2.waitKey(1) & 0xFF == ord('q'):
 			break
