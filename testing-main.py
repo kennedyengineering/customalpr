@@ -4,7 +4,7 @@ import numpy as np
 from threading import Thread
 import datetime
 import getpass
-import copy
+import matplotlib
 
 # check if alpr configuration files and install are OK
 print("loading Alpr")
@@ -91,6 +91,13 @@ videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/
 cam = WebcamVideoStream(src=videoSource).start()
 fps = FPS().start()
 
+def getSystemUptime():
+	with open('/proc/uptime', 'r') as f:
+		uptime_seconds = float(f.readline().split()[0])
+		uptime_string = str(datetime.timedelta(seconds=uptime_seconds))
+
+	return uptime_string
+
 class licensePlate():
 	# a simple object to hold the necessary data, and make things easier
 	def __init__(self, number, image, time, cameraName, detectorBoxName):
@@ -158,7 +165,8 @@ class detectionBox():
 					# convert lpr results into a licenseplate object and store in licenseplatelist
 					plateNumber = plate['plate']
 					plateImage = frame[int(boundingRect[1]):int(boundingRect[1] + boundingRect[3]), int(boundingRect[0]):int(boundingRect[0] + boundingRect[2])]
-					plateTime = datetime.datetime.now()
+					#plateTime = datetime.datetime.now()
+					plateTime = getSystemUptime()
 					newPlate = licensePlate(plateNumber, plateImage, plateTime, self.cameraName, self.name)
 					self.licenseplateList.append(newPlate)
 					self.licenseplateService.notify() # help out the poor thread
@@ -201,65 +209,52 @@ class licenseplateService():
 	def __init__(self, detectionboxreference):
 		self.detectionBoxReference = detectionboxreference
 
-		#copy.copy --> shallow copy
-		#copy.deepcopy --> deep copy
-
-		#start both as the same thing
-		self.lastLicenseplateList = self.detectionBoxReference.licenseplateList
-		self.currentLicenseplateList = self.lastLicenseplateList
-
 		#defintely not a speed problem!!!!
 		#785484 FPS!!!
 
 		self.stopped = False
 		self.notified = False
 
+		self.outputfile = open("timedensity.txt", "w+")
+
 	def start(self):
 		Thread(target=self.update, args=()).start()
 		return self
 
 	def update(self):
+		def uptimeToSeconds(time):
+
+			time = str(time)
+			time = time.replace(':', ' ')
+			time = time.replace('.', ' ')
+			time = time.split(' ')
+
+			hours = int(time[0])
+			minutes = int(time[1])
+			seconds = int(time[2])
+			microseconds = int(time[3])
+
+			return hours*3600 + minutes*60 + seconds + microseconds/1000000
+
 		while True:
 			if self.stopped:
 				return
 
 			if self.notified:
-
 				# this means that a new license plate has been added to the list
 				self.notified = False
-				print("ON IT!", len(self.detectionBoxReference.licenseplateList))
+
+				licensePlateListLength = len(self.detectionBoxReference.licenseplateList)
+				print("Added plate to list. Current length: ", licensePlateListLength)
+
+				#self.outputfile.write(str(datetime.datetime.now().time())+"\n")
+
+				#print(uptimeToSeconds(self.detectionBoxReference.licenseplateList[licensePlateListLength-1].timeSpotted))
 
 
-			'''
-			self.currentLicenseplateList = self.detectionBoxReference.licenseplateList
-
-			lastQuantity = len(self.lastLicenseplateList)
-			currentQuantity = len(self.currentLicenseplateList)
-
-			if currentQuantity != lastQuantity:
-				print(currentQuantity, lastQuantity, len(self.detectionBoxReference.licenseplateList))
-
-			self.lastLicenseplateList = self.currentLicenseplateList
-			'''
-
-			'''
-			if self.lastLicenseplateList == None:
-				self.lastLicenseplateList = self.currentLicenseplateList
-				continue
-			else:
-				lastQuantity = len(self.lastLicenseplateList)
-				currentQuantity = len(self.currentLicenseplateList)
-
-				if currentQuantity != lastQuantity:
-					print(currentQuantity, lastQuantity)
-
-				#if self.lastLicenseplateList != self.currentLicenseplateList:
-				#	print(len(self.currentLicenseplateList))
-
-			self.lastLicenseplateList = self.currentLicenseplateList
-			'''
 
 	def stop(self):
+		self.outputfile.close()
 		self.stopped = True
 
 	def notify(self):
