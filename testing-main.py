@@ -19,8 +19,9 @@ if not alpr.is_loaded():
 else:
 	print("Alpr loaded successfully")
 	del alpr # just for testing!!!
+# done checking
 
-# helper modules from
+# helper modules from pyImageSearch
 class FPS:
 	#from pyImageSearch
 	def __init__(self):
@@ -86,20 +87,22 @@ class WebcamVideoStream:
 	def stop(self):
 		# indicate that the thread should be stopped
 		self.stopped = True
+# end helper module definition
 
 videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/" # bring from config file. Allow for multiple cameras
 cam = WebcamVideoStream(src=videoSource).start()
 fps = FPS().start()
 
+# customalpr modules
 def getSystemUptime():
 	with open('/proc/uptime', 'r') as f:
 		uptime_seconds = float(f.readline().split()[0])
-		uptime_string = str(datetime.timedelta(seconds=uptime_seconds))
+		#uptime_string = str(datetime.timedelta(seconds=uptime_seconds))
 
-	return uptime_string
+	return uptime_seconds
 
 class licensePlate():
-	# a simple object to hold the necessary data, and make things easier
+	# a simple object data type to hold the necessary data, and make things easier
 	def __init__(self, number, image, time, cameraName, detectorBoxName):
 		self.number = number
 		self.image = image
@@ -215,26 +218,15 @@ class licenseplateService():
 		self.stopped = False
 		self.notified = False
 
-		self.outputfile = open("timedensity.txt", "w+")
+		self.orderedLicensePlateList = []
+
+		#self.outputfile = open("timedensity.txt", "w+")
 
 	def start(self):
 		Thread(target=self.update, args=()).start()
 		return self
 
 	def update(self):
-		def uptimeToSeconds(time):
-
-			time = str(time)
-			time = time.replace(':', ' ')
-			time = time.replace('.', ' ')
-			time = time.split(' ')
-
-			hours = int(time[0])
-			minutes = int(time[1])
-			seconds = int(time[2])
-			microseconds = int(time[3])
-
-			return hours*3600 + minutes*60 + seconds + microseconds/1000000
 
 		while True:
 			if self.stopped:
@@ -242,112 +234,75 @@ class licenseplateService():
 
 			if self.notified:
 				# this means that a new license plate has been added to the list
+				# time to sort and place that new plate
 				self.notified = False
 
-				licensePlateListLength = len(self.detectionBoxReference.licenseplateList)
-				print("Added plate to list. Current length: ", licensePlateListLength)
+				# copy contents in to a buffer and flush the original buffer
+				tempLicensePlateList = self.detectionBoxReference.licenseplateList
+				self.detectionBoxReference.licenseplateList = []
+
+				#licensePlateListLength = len(self.detectionBoxReference.licenseplateList)
+				#print("Added plate to list. Current length: ", licensePlateListLength)
+
+				# use licensePlateList like a buffer of new data to be actively sorted into a new ordered list
+				# order based on time stamp
+				tempLicensePlateList.sort(key=lambda x: x.timeSpotted)
+
+				# diagnostic for loop
+				for plate in tempLicensePlateList:
+					print(plate.timeSpotted)
+					#print(plate.timeSpotted)
+
+				# add ordered list to total list
+				self.orderedLicensePlateList += tempLicensePlateList
+
+				# ordered list based on time, separate into groups based on time differentials
+				# refine groups based on license plate numbers
+				timeDifferentialIndexes = []				# time differential index list, difference between [i+1] - [i]
+				minTimeDifferential = 3 # seconds
+				for i in range(len(self.orderedLicensePlateList)):
+					# check if last element in list
+					if i == len(self.orderedLicensePlateList)-1:
+						break
+
+					difference = self.orderedLicensePlateList[i+1].timeSpotted - self.orderedLicensePlateList[i].timeSpotted
+					print(difference)
+
+					if difference >= minTimeDifferential:
+						timeDifferentialIndexes.append(i)
+
+				groups = []
+				for i in range(len(timeDifferentialIndexes)):
+					# check if last element in list
+					if i == len(timeDifferentialIndexes)-1:
+						break
+
+					indexRange = range(timeDifferentialIndexes[i], timeDifferentialIndexes[i+1]) # goes from numbers i --> one less than i+1
+					groups.append(indexRange)
+
+				print(timeDifferentialIndexes)
+				print(groups)
 
 				#self.outputfile.write(str(datetime.datetime.now().time())+"\n")
-
 				#print(uptimeToSeconds(self.detectionBoxReference.licenseplateList[licensePlateListLength-1].timeSpotted))
 
-
-
 	def stop(self):
-		self.outputfile.close()
+		#self.outputfile.close()
 		self.stopped = True
 
 	def notify(self):
 		self.notified = True
+# end custom alpr module definitions
 
+# define search areas
 areasOfInterest = {"IN":(232, 614, 643, 455)}#, "OUT":(997, 682, 843, 384)}
 detectionBoxes = []
 for searchbox in areasOfInterest:
 	newBox = detectionBox("LPR CAMERA", searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime).start()
 	detectionBoxes.append(newBox)
+# end define
 
-def overlap(a, b):
-	# x,y,w,h
-	# a is first
-	# b is second
-	# test if any point from first rect is inside second rect
-
-	x = a[0]
-	y = a[1]
-	w = a[2]
-	h = a[3]
-	upperleft1 = (x, y)
-	upperright1 = (x + w, y)
-	lowerleft1 = (x, y + h)
-	lowerright1 = (x + w, y + h)
-
-	x = b[0]
-	y = b[1]
-	w = b[2]
-	h = b[3]
-	upperleft2 = (x, y)
-	upperright2 = (x + w, y)
-	lowerleft2 = (x, y + h)
-	lowerright2 = (x + w, y + h)
-
-	# check top left
-	topLeftX = False
-	if (upperleft1[0] < upperright2[0]):
-		if (upperleft1[0] > upperleft2[0]):
-			topLeftX = True
-	topLeftY = False
-	if (upperleft1[1] > upperleft2[1]):
-		if (upperleft1[1] < lowerleft2[1]):
-			topLeftY = True
-	topLeft = False
-	if topLeftY and topLeftX:
-		topLeft = True
-
-	# check top right
-	topRightX = False
-	if (upperright1[0] < upperright2[0]):
-		if (upperright1[0] > upperleft2[0]):
-			topRightX = True
-	topRightY = False
-	if (upperright1[1] > upperleft2[1]):
-		if (upperright1[1] < lowerleft2[1]):
-			topRightY = True
-	topRight = False
-	if topRightY and topRightX:
-		topRight = True
-
-	# check bottom left
-	bottomLeftX = False
-	if (lowerleft1[0] < upperright2[0]):
-		if (lowerleft1[0] > upperleft2[0]):
-			bottomLeftX = True
-	bottomLeftY = False
-	if (lowerleft1[1] > upperleft2[1]):
-		if (lowerleft1[1] < lowerleft2[1]):
-			bottomLeftY = True
-	bottomLeft = False
-	if bottomLeftY and bottomLeftX:
-		bottomLeft = True
-
-	# check bottom right
-	bottomRightX = False
-	if (lowerright1[0] < upperright2[0]):
-		if (lowerright1[0] > upperleft2[0]):
-			bottomRightX = True
-	bottomRightY = False
-	if (lowerright1[1] > upperleft2[1]):
-		if (lowerright1[1] < lowerleft2[1]):
-			bottomRightY = True
-	bottomRight = False
-	if bottomRightX and bottomRightY:
-		bottomRight = True
-
-	#return bool
-	if bottomRight or bottomLeft or topLeft or topRight:
-		return True
-	else:
-		return False
-
+# setup user interface variables
 gui = True # should be a flag, or have default be set in config
 guiResolution = (800,600)
 if gui:
@@ -359,8 +314,8 @@ else:
 	print("Starting in CONSOLE mode")
 	print("type 'help' for a list of commands")
 	print()
-
 usableCommands = {"help": "show all usable commands", "q": "quit the program"}
+# end define
 
 # main loop
 while 1:
