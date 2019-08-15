@@ -5,6 +5,8 @@ from threading import Thread
 import datetime
 import getpass
 import matplotlib
+import sqlite3
+import os.path
 
 # check if alpr configuration files and install are OK
 print("loading Alpr")
@@ -89,12 +91,104 @@ class WebcamVideoStream:
 		self.stopped = True
 # end helper module definition
 
-videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/" # bring from config file. Allow for multiple cameras
+videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/" # bring from config file. Allow for multiple cameras/sources
 #videoSource = "recording.avi"
 cam = WebcamVideoStream(src=videoSource).start()
 fps = FPS().start()
 
 # customalpr modules
+class databaseService():
+	def __init__(self):
+		# WARNING!!
+		# The purpose of this thread is to control the writing to the database from multiple locations
+		# This module prevents writes occuring at the same time
+		# as well as handling other aspects of the database
+		# technically sqlite3 can have multiple connections, but this seems like a safe idea
+
+		# there should only be ONE databaseService initialized!!!
+		self.databaseName = "database/database.db"
+		# check if database already exists, if not, initialize it
+		print(" ")
+		print("Connecting to database...")
+		if (os.path.exists(self.databaseName) == False): # true if file exists
+			print("No database found, initializing...")
+			connection = sqlite3.connect(self.databaseName)
+			cursor = connection.cursor()
+
+			# need to record everything in the licenseplate class
+			# - plate number <string>
+			# - path to plate image (one image will be saved) <string>
+			# - time spotted (range?) (datetime) <?>
+			# - camera name <string>
+			# - detectorBoxName (IN/OUT) <string>
+
+			tableInitializationCommand = """CREATE TABLE licenseplates (
+			plate_number VARCHAR(20),
+			plate_image_path VARCHAR(200),
+			time_spotted VARCHAR(50),
+			camera_name VARCHAR(20),
+			detection_box_name VARCHAR(20));"""
+
+			cursor.execute(tableInitializationCommand)
+			connection.commit()
+			connection.close()
+
+			print("Initialized new database")
+		else:
+			print("Database found")
+
+		# buffer of data entries to be entered sequentially, contains licensePlate objects
+		self.entryList = []
+
+		self.stopped = False
+
+	def start(self):
+		Thread(target=self.update, args=()).start()
+		return self
+
+	def writeToDatabase(self, licensePlate):
+		# licenseplate is of the licensePlate class/ datatype
+		self.entryList.append(licensePlate)
+
+	def update(self):
+
+		# SQLite objects can only be called in the thread that they were created in!
+	 	# create SQL objects here
+		connection = sqlite3.connect(self.databaseName)
+		cursor = connection.cursor()
+		print("Connected to database")
+		print(" ")
+
+		while True:
+			if self.stopped:
+				break
+
+			# store licenseplate in database
+			for plate in self.entryList:
+				# find a way to delete the licenseplate objects and release memory, later... DO in licenseplateservice
+				# store image in IMAGES directory, get path
+				directoryPath = "database/Images/" + str(plate.cameraName) + " " + str(plate.detectorName) + " " + str(plate.datetime).replace(".", "-") + " " + str(plate.number) + ".png"
+				print("Found license plate:" + str(plate.number))
+				print("Saved image to: " + directoryPath)
+				cv2.imwrite(directoryPath, plate.image)
+
+				entryCommand = 'INSERT INTO licenseplates VALUES("{}", "{}", "{}", "{}", "{}")'.format(str(plate.number), directoryPath, str(plate.datetime), plate.cameraName, plate.detectorName)
+				cursor.execute(entryCommand)
+
+			if len(self.entryList) != 0:
+				connection.commit()
+
+			self.entryList = [] # delete all plates in list
+
+
+		# clean up, the thread is dead, long live the thread!
+		connection.close()		# close the connection to the database
+		print(" ")
+		print("Disconnected from the database")
+
+	def stop(self):
+		self.stopped = True
+
 def getSystemUptime():
 	with open('/proc/uptime', 'r') as f:
 		uptime_seconds = float(f.readline().split()[0])
@@ -104,15 +198,17 @@ def getSystemUptime():
 
 class licensePlate():
 	# a simple object data type to hold the necessary data, and make things easier
-	def __init__(self, number, image, time, cameraName, detectorBoxName):
+	def __init__(self, number, image, time, cameraName, detectorBoxName, datetime, confidence = 0.0):
 		self.number = number
 		self.image = image
 		self.timeSpotted = time
 		self.cameraName = cameraName
 		self.detectorName = detectorBoxName
+		self.datetime = datetime
+		self.confidence = confidence
 
 class detectionBox():
-	def __init__(self, cameraName, name, area, webcamReference, alprconfig, alprruntime):
+	def __init__(self, cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference):
 		self.cameraName = cameraName
 		self.name = name
 		self.area = area # bounding box for the search
@@ -130,7 +226,7 @@ class detectionBox():
 		# stores licensplate objects
 		self.licenseplateList = []
 
-		self.licenseplateService = licenseplateService(self).start()
+		self.licenseplateService = licenseplateService(self, dbReference).start()
 
 	def start(self):
 		Thread(target=self.update, args=()).start()
@@ -169,9 +265,10 @@ class detectionBox():
 					# convert lpr results into a licenseplate object and store in licenseplatelist
 					plateNumber = plate['plate']
 					plateImage = frame[int(boundingRect[1]):int(boundingRect[1] + boundingRect[3]), int(boundingRect[0]):int(boundingRect[0] + boundingRect[2])]
-					#plateTime = datetime.datetime.now()
+					plateDatetime = datetime.datetime.now()
 					plateTime = getSystemUptime()
-					newPlate = licensePlate(plateNumber, plateImage, plateTime, self.cameraName, self.name)
+					plateConfidence = plate['confidence']
+					newPlate = licensePlate(plateNumber, plateImage, plateTime, self.cameraName, self.name, plateDatetime, plateConfidence)
 					self.licenseplateList.append(newPlate)
 					self.licenseplateService.notify() # help out the poor thread
 
@@ -210,8 +307,9 @@ class detectionBox():
 		self.stopped = True
 
 class licenseplateService():
-	def __init__(self, detectionboxreference):
+	def __init__(self, detectionboxreference, dbReference):
 		self.detectionBoxReference = detectionboxreference
+		self.dbReference = dbReference
 
 		#defintely not a speed problem!!!!
 		#785484 FPS!!!
@@ -221,8 +319,6 @@ class licenseplateService():
 
 		self.orderedLicensePlateList = []
 		self.groupsList = []
-
-		#self.outputfile = open("timedensity.txt", "w+")
 
 	def start(self):
 		Thread(target=self.update, args=()).start()
@@ -257,7 +353,7 @@ class licenseplateService():
 			# ordered list based on time, separate into groups based on time differentials
 			# refine groups based on license plate numbers
 			timeDifferentialIndexes = []				# time differential index list, difference between [i+1] - [i]
-			minTimeDifferential = 3 					# seconds, should be variable, the time differential between sequential plates time spotted
+			minTimeDifferential = 3 					# seconds, should be variable, the time differential between sequential plates time spotted, 3 is good time
 			maxWaitTime = 10							# seconds, should be variable, the time differential between time spotted and system time
 			for i in range(len(self.orderedLicensePlateList)):
 				# check if last element in list
@@ -315,7 +411,7 @@ class licenseplateService():
 				self.groupsList.append(tempPlateGroup)
 
 
-			print(len(self.groupsList))
+			#print(len(self.groupsList)) 		# can be used for estimating the number of cars that pass by
 			#print(self.groupsList)
 
 
@@ -326,6 +422,7 @@ class licenseplateService():
 			# take the plates in self.groupsList and check for consistency
 			# refine the groups by moving plates into their correct groups if they were miss-classified
 			# verify by plate number?
+			# helpful in high traffic areas with lower time between plate sightings
 
 			################## END REFINE GROUPS ##############
 
@@ -337,11 +434,24 @@ class licenseplateService():
 			# need to record everything in the licenseplate class
 			# - plate number
 			# - path to plate image (one image will be saved)
-			# - time spotted (range?)
+			# - time spotted (range?) (first seen?)
 			# - camera name
 			# - detectorBoxName (IN/OUT)
 
+			# choose a plate with the highest confidence to represent the group? or create a new licensePlate object to represent the group? both?
+			tempGroupList = self.groupsList
+			for group in self.groupsList:
+				mostConfidentPlate = group[0] # first plate in group
+				# find the plate with the highest confidence
+				for plate in group:
+					if plate.confidence > mostConfidentPlate.confidence:
+						mostConfidentPlate = plate
+				#youngest plate would be the first (or last?) in the group, FYI
+				self.dbReference.writeToDatabase(mostConfidentPlate)
+				tempGroupList.remove(group)
 
+			#self.groupsList = [] # after writing the plate to database, purge the groupList. Make group list local? (remove self.X)?
+			self.groupList = tempGroupList
 
 			################## END PUBLISH DATA TO SQL DATABASE ################
 
@@ -350,13 +460,17 @@ class licenseplateService():
 
 	def notify(self):
 		self.notified = True
+
 # end custom alpr module definitions
+
+# start up the database server, REMEMBER TO ACTUALLY .start() IT!!!
+dbService = databaseService().start()
 
 # define search areas
 areasOfInterest = {"IN":(232, 614, 643, 455)}#, "OUT":(997, 682, 843, 384)}
 detectionBoxes = []
 for searchbox in areasOfInterest:
-	newBox = detectionBox("LPR CAMERA", searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime).start()
+	newBox = detectionBox("LPR CAMERA", searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime, dbService).start()
 	detectionBoxes.append(newBox)
 # end define
 
@@ -409,6 +523,9 @@ for box in detectionBoxes:
 fps.stop()
 print("main", "FPS: ", fps.fps())
 
+dbService.stop()
+
 #stop camera, destroy gui
 cam.stop()
 cv2.destroyAllWindows()
+
