@@ -177,9 +177,7 @@ class databaseService():
 
 			if len(self.entryList) != 0:
 				connection.commit()
-
-			self.entryList = [] # delete all plates in list
-
+				self.entryList = []  # delete all plates in list
 
 		# clean up, the thread is dead, long live the thread!
 		connection.close()		# close the connection to the database
@@ -206,6 +204,7 @@ class licensePlate():
 		self.detectorName = detectorBoxName
 		self.datetime = datetime
 		self.confidence = confidence
+		self.delete = False
 
 class detectionBox():
 	def __init__(self, cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference):
@@ -414,6 +413,9 @@ class licenseplateService():
 			#print(len(self.groupsList)) 		# can be used for estimating the number of cars that pass by
 			#print(self.groupsList)
 
+			#for group in self.groupsList:
+			#	for plate in group:
+			#		print(plate.confidence)
 
 			################# PLATE GROUP SORTING END ################
 
@@ -438,8 +440,23 @@ class licenseplateService():
 			# - camera name
 			# - detectorBoxName (IN/OUT)
 
+			for group in self.groupsList:
+				#find and publish the most confident plate in the group
+				mostConfidentPlate = group[0]
+				for plate in group:
+					if plate.confidence > mostConfidentPlate.confidence:
+						mostConfidentPlate = plate	#works!
+
+					#plate.delete = True			#mark plate for deletion #this does not help...
+
+				self.dbReference.writeToDatabase(mostConfidentPlate)
+			self.groupsList = []
+				#print()
+				#print(mostConfidentPlate.confidence)
+
+
 			# choose a plate with the highest confidence to represent the group? or create a new licensePlate object to represent the group? both?
-			tempGroupList = self.groupsList
+			'''tempGroupList = self.groupsList
 			for group in self.groupsList:
 				mostConfidentPlate = group[0] # first plate in group
 				# find the plate with the highest confidence
@@ -452,6 +469,7 @@ class licenseplateService():
 
 			#self.groupsList = [] # after writing the plate to database, purge the groupList. Make group list local? (remove self.X)?
 			self.groupList = tempGroupList
+			'''
 
 			################## END PUBLISH DATA TO SQL DATABASE ################
 
