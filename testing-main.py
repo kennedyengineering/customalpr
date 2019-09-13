@@ -4,9 +4,11 @@ import numpy as np
 from threading import Thread
 import datetime
 import getpass
-import matplotlib
 import sqlite3
 import os.path
+import yaml
+from multiprocessing import Process, Value
+import time
 
 # check if alpr configuration files and install are OK
 print("loading Alpr")
@@ -91,10 +93,109 @@ class WebcamVideoStream:
 		self.stopped = True
 # end helper module definition
 
-videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/" # bring from config file. Allow for multiple cameras/sources
+###### load config file data #####################
+print("")
+print("Loading config file")
+
+configFilePath = "config.yml"
+with open(configFilePath, 'r') as stream:
+    config = yaml.load(stream)
+
+#videoSourceList = [] # populate with members of 'cameraAddresses'
+#for pair in config['cameraAddresses']:
+#	for name in pair:
+#		videoSourceList.append(pair[name])
+
+gui = config['GUItoggle']
+guiResolutionX = config['GUIresolutionX']
+guiResolutionY = config['GUIresolutionY']
+guiResolution = (guiResolutionX, guiResolutionY)
+
+class cameraDatatype:
+    def __init__(self, name, url, aoiList):
+        self.name = name
+        self.url = url
+        self.aoiList = aoiList
+
+cameraList = []
+for camera in config['cameraAddresses']:
+    for name in camera:
+        cameraID = camera[name]
+        cameraName = name
+        cameraUrl = cameraID[0]['url']
+        cameraAOI = []
+        for aoi in cameraID[1]['aoi']:
+            for entry in aoi:
+                #print(aoi[entry])
+                X = aoi[entry][0]['X']
+                Y = aoi[entry][1]['Y']
+                W = aoi[entry][2]['W']
+                H = aoi[entry][3]['H']
+                tempDict = {entry: (X, Y, W, H)}
+                cameraAOI.append(tempDict)
+
+    cameraList.append(cameraDatatype(cameraName, cameraUrl, cameraAOI))
+
+print("Config file loaded successfully")
+##### end load config file data ###################
+
+#videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/" # bring from config file. Allow for multiple cameras/sources
+##videoSource = videoSourceList[0]
 #videoSource = "recording.avi"
-cam = WebcamVideoStream(src=videoSource).start()
-fps = FPS().start()
+##cam = WebcamVideoStream(src=videoSource).start()
+##fps = FPS().start()
+
+def startALPRonCamera(camera, dbService, alprConf, alprRunTime):
+	global progTerminate, gui
+	# camera, dbService, alprConf, alprRunTime
+
+	# wants camera datatype
+	cam = WebcamVideoStream(src=camera.url).start()
+	guiFPS = FPS().start()
+
+	# define search areas
+	# areasOfInterest = {"IN":(232, 614, 643, 455)}#, "OUT":(997, 682, 843, 384)} #pull from config file
+	# detectionBoxes = []
+	# for searchbox in areasOfInterest:
+	#	newBox = detectionBox("LPR CAMERA", searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime, dbService).start()
+	#	detectionBoxes.append(newBox)
+	# end define
+
+	detectionBoxes = []
+	for searchbox in camera.aoiList:
+		for searchBoxName in searchbox:
+			# needs -->  cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference
+			newBox = detectionBox(camera.name, searchBoxName, searchbox[searchBoxName], cam, alprConf, alprRunTime, dbService).start()
+			detectionBoxes.append(newBox)
+
+	# main loop
+	while 1:
+		if gui:
+			frame = cam.read()
+			guiFPS.update()
+
+			for box in detectionBoxes:
+				frame = box.draw(frame)
+
+			frame = cv2.resize(frame, guiResolution)
+			cv2.imshow(camera.name, frame)
+			if cv2.waitKey(1) & 0xFF == ord('q'):
+				progTerminate = True
+				break
+		elif progTerminate:
+			break
+
+	## When main loop exits --> program terminate and clean up
+
+	for box in detectionBoxes:
+		box.stop()
+
+	guiFPS.stop()
+	if gui:
+		print(camera.name+" gui", guiFPS.fps())
+	cam.stop()
+
+	return
 
 # customalpr modules
 class databaseService():
@@ -141,6 +242,7 @@ class databaseService():
 		self.entryList = []
 
 		self.stopped = False
+		self.ready = False
 
 	def start(self):
 		Thread(target=self.update, args=()).start()
@@ -151,7 +253,7 @@ class databaseService():
 		self.entryList.append(licensePlate)
 
 	def update(self):
-
+		self.ready = True
 		# SQLite objects can only be called in the thread that they were created in!
 	 	# create SQL objects here
 		connection = sqlite3.connect(self.databaseName)
@@ -481,20 +583,25 @@ class licenseplateService():
 
 # end custom alpr module definitions
 
+
+
 # start up the database server, REMEMBER TO ACTUALLY .start() IT!!!
 dbService = databaseService().start()
 
-# define search areas
-areasOfInterest = {"IN":(232, 614, 643, 455)}#, "OUT":(997, 682, 843, 384)}
-detectionBoxes = []
-for searchbox in areasOfInterest:
-	newBox = detectionBox("LPR CAMERA", searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime, dbService).start()
-	detectionBoxes.append(newBox)
-# end define
+# replace with better system for launching threads in order... get the OK from dbService
+while not dbService.ready:
+	continue
 
-# setup user interface variables
-gui = True # should be a flag, or have default be set in config
-guiResolution = (800,600)
+# start up ALPR loop on camera
+progTerminate = False
+
+cameraThreads = {}
+for camera in cameraList:
+	cameraThreads[camera.name] = Thread(target=startALPRonCamera, args=(camera, dbService, alprConf, alprRunTime)).start()
+	#cameraThreads[camera.name].start()
+
+####
+# handle terminal commands in a loop here
 if gui:
 	print("Starting in GUI mode")
 	print("Resolution: ", guiResolution)
@@ -505,24 +612,10 @@ else:
 	print("type 'help' for a list of commands")
 	print()
 usableCommands = {"help": "show all usable commands", "q": "quit the program"}
-# end define
 
-# main loop
 while 1:
-	# main thread, handle UI and clean exit
-
-	if gui:
-		frame = cam.read()
-		fps.update()
-
-		for box in detectionBoxes:
-			frame = box.draw(frame)
-
-		frame = cv2.resize(frame, guiResolution)
-		cv2.imshow('viewer', frame)
-		if cv2.waitKey(1) & 0xFF == ord('q'):
-			break
-	else:
+	# main thread loop, handle UI and clean exit
+	if not gui:
 		command = input(">> ")
 		if command == "q":
 			break
@@ -530,20 +623,76 @@ while 1:
 			for option in usableCommands:
 				print(option, " : ", usableCommands[option])
 			continue
-		else:
-			continue
+
+	if progTerminate:
+		break
+
+####
+
+# send end signal to process
+progTerminate = True
+
+# threads close faster than for loop can get to them
+#for camera in cameraList:
+#	cameraThreads[camera.name].join()
+
+# define search areas
+#areasOfInterest = {"IN":(232, 614, 643, 455)}#, "OUT":(997, 682, 843, 384)} #pull from config file
+#detectionBoxes = []
+#for searchbox in areasOfInterest:
+#	newBox = detectionBox("LPR CAMERA", searchbox, areasOfInterest[searchbox], cam, alprConf, alprRunTime, dbService).start()
+#	detectionBoxes.append(newBox)
+# end define
+
+# setup user interface variables
+#gui = True # should be a flag, or have default be set in config
+#guiResolution = (800,600)
+#if gui:
+#	print("Starting in GUI mode")
+#	print("Resolution: ", guiResolution)
+#	print("press 'q' to exit")
+#	print()
+#else:
+#	print("Starting in CONSOLE mode")
+#	print("type 'help' for a list of commands")
+#	print()
+#usableCommands = {"help": "show all usable commands", "q": "quit the program"}
+# end define
+
+# main loop
+#while 1:
+#	# main thread, handle UI and clean exit
+#
+#	if gui:
+#		frame = cam.read()
+#		fps.update()
+#
+#		for box in detectionBoxes:
+#			frame = box.draw(frame)
+#
+#		frame = cv2.resize(frame, guiResolution)
+#		cv2.imshow('viewer', frame)
+#		if cv2.waitKey(1) & 0xFF == ord('q'):
+#			break
+#	else:
+#		command = input(">> ")
+#		if command == "q":
+#			break
+#		elif command == "help":
+#			for option in usableCommands:
+#				print(option, " : ", usableCommands[option])
+#			continue
+#		else:
+#			continue
 
 #kill all search box threads
-for box in detectionBoxes:
-	box.stop()
+#for box in detectionBoxes:
+#	box.stop()
 
 #print average FPS when program terminated
-fps.stop()
-print("main", "FPS: ", fps.fps())
+#fps.stop()
+#print("main", "FPS: ", fps.fps())
 
 dbService.stop()
-
-#stop camera, destroy gui
-cam.stop()
 cv2.destroyAllWindows()
 
