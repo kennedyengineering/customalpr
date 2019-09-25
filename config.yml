@@ -18,20 +18,6 @@ cameraAddresses:
                     - W: 643
                     - H: 455
 
-   #- TESTAOI:
-   #     - url: www.google.com
-   #     - aoi:
-   #          - in:
-   #               - X: 100
-   #               - Y: 100
-   #               - W: 100
-   #               - H: 100
-   #          - out:
-   #               - X: 101
-   #               - Y: 101
-   #               - W: 101
-   #               - H: 101
-
 GUItoggle: true
 GUIresolutionX: 800
 GUIresolutionY: 600

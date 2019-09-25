@@ -7,8 +7,8 @@ import getpass
 import sqlite3
 import os.path
 import yaml
-from multiprocessing import Process, Value
 import time
+import copy
 
 # check if alpr configuration files and install are OK
 print("loading Alpr")
@@ -266,6 +266,7 @@ class databaseService():
 				break
 
 			# store licenseplate in database
+			numCommits = 0
 			for plate in self.entryList:
 				# find a way to delete the licenseplate objects and release memory, later... DO in licenseplateservice
 				# store image in IMAGES directory, get path
@@ -276,10 +277,12 @@ class databaseService():
 
 				entryCommand = 'INSERT INTO licenseplates VALUES("{}", "{}", "{}", "{}", "{}")'.format(str(plate.number), directoryPath, str(plate.datetime), plate.cameraName, plate.detectorName)
 				cursor.execute(entryCommand)
-
-			if len(self.entryList) != 0:
 				connection.commit()
-				self.entryList = []  # delete all plates in list
+
+				numCommits += 1
+
+			if numCommits == len(self.entryList):
+				self.entryList = []
 
 		# clean up, the thread is dead, long live the thread!
 		connection.close()		# close the connection to the database
@@ -551,7 +554,7 @@ class licenseplateService():
 
 					#plate.delete = True			#mark plate for deletion #this does not help...
 
-				self.dbReference.writeToDatabase(mostConfidentPlate)
+				self.dbReference.writeToDatabase(copy.deepcopy(mostConfidentPlate))
 			self.groupsList = []
 				#print()
 				#print(mostConfidentPlate.confidence)
