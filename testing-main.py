@@ -60,16 +60,15 @@ class FPS:
 class WebcamVideoStream:
 	# from pyImageSearch website
 	def __init__(self, src=0):
+		# initialize the variable used to indicate if the thread should
+		# be stopped
+		self.stopped = False
 		# initialize the video camera stream and read the first frame
 		# from the stream
 		self.src = src
 		self.stream = cv2.VideoCapture(src)
 		#(self.grabbed, self.frame) = self.stream.read()
 		self.frame = self.grabFrame()
-
-		# initialize the variable used to indicate if the thread should
-		# be stopped
-		self.stopped = False
 
 	def start(self):
 		# start the thread to read frames from the video stream
