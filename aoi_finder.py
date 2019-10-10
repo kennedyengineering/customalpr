@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-videoSource = "rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/"
+videoSource = input("Video Source: ")
 cam = cv2.VideoCapture()
 cam.open(videoSource)
 
