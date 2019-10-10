@@ -37,13 +37,11 @@ pip3 install opencv-contrib-python
 ```
 
 Installing OpenALPR
-```
-Follow the "Easy Way (Ubuntu 14.04+)" installation tutorial. Not "The Easiest Way" installation tutorial. That will not work.
-https://github.com/openalpr/openalpr/wiki/Compilation-instructions-(Ubuntu-Linux)
-```
-```
-If there are any issues this thread is helpful. https://github.com/openalpr/openalpr/issues/660
-```
+
+Follow the "Easy Way (Ubuntu 14.04+)" installation tutorial. Not "The Easiest Way" installation tutorial. That will not work. [link](https://github.com/openalpr/openalpr/wiki/Compilation-instructions-(Ubuntu-Linux))
+
+If there are any issues this thread is helpful. [link](https://github.com/openalpr/openalpr/issues/660)
+
 
 ## Configuration
 
