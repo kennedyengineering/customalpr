@@ -72,14 +72,14 @@ GUIresolutionY: 600
 ```
 Breaking it down:
 
-*cameraAddresses* - the list that contains camera definitions
-*example_camera_name* - name of the camera (can change)
-*url* - the source of the video feed. Can be url of an IP camera or a path to a video. Can be anything opencv.VideoCapture can open.
-*aoi* - area of interest. CustomALPR will only search for licenseplates within the bounds of this rectangle. Use the aoi_finder.py utility to find the values.
-*X*,*Y*,*W*,*H* - rectangle definiton. Defines the area concerning the aoi. aoi_finder.py returns values in this order.
-*GUItoggle* - self explanatory
-*GUIresolutionX* - size of GUI screen's width in pixels
-*GUIresolutionY* - size of GUI screen's height in pixels
+*cameraAddresses* - the list that contains camera definitions <br />
+*example_camera_name* - name of the camera (can change) <br />
+*url* - the source of the video feed. Can be url of an IP camera or a path to a video. Can be anything opencv.VideoCapture can open. <br />
+*aoi* - area of interest. CustomALPR will only search for licenseplates within the bounds of this rectangle. Use the aoi_finder.py utility to find the values. <br />
+*X*,*Y*,*W*,*H* - rectangle definiton. Defines the area concerning the aoi. aoi_finder.py returns values in this order. <br />
+*GUItoggle* - self explanatory <br />
+*GUIresolutionX* - size of GUI screen's width in pixels <br />
+*GUIresolutionY* - size of GUI screen's height in pixels <br />
 
 ### Starting CustomALPR
 
