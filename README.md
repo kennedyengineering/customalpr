@@ -92,4 +92,4 @@ python3 main.py
 ## Acknowledgments
 This project builds heavily upon the work done by OpenAlpr. [link](https://github.com/openalpr/openalpr)
 
-Thanks the Adrian at PyImageSearch for the optimized webcam class. [link](https://www.pyimagesearch.com/2015/12/21/increasing-webcam-fps-with-python-and-opencv/)
+Thanks to Adrian at PyImageSearch for the optimized webcam class. [link](https://www.pyimagesearch.com/2015/12/21/increasing-webcam-fps-with-python-and-opencv/)
