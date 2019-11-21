@@ -4,6 +4,7 @@ from licenseplate_service import licenseplateService
 from threading import Thread
 import cv2
 import numpy as np
+import datetime
 
 class detectionBox():
 	def __init__(self, cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference):

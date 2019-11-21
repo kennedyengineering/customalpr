@@ -3,8 +3,10 @@ from fps import FPS
 from detection_box import detectionBox
 import cv2
 
-def startALPRonCamera(camera, dbService, alprConf, alprRunTime, gui, guiResolution, progTerminate):
+def startALPRonCamera(camera, dbService, alprConf, alprRunTime, gui, guiResolution):
 	# camera, dbService, alprConf, alprRunTime
+	#global progTerminate
+	#progTerminate = False
 
 	# wants camera datatype
 	cam = WebcamVideoStream(src=camera.url).start()
@@ -29,10 +31,10 @@ def startALPRonCamera(camera, dbService, alprConf, alprRunTime, gui, guiResoluti
 			frame = cv2.resize(frame, guiResolution)
 			cv2.imshow(camera.name, frame)
 			if cv2.waitKey(1) & 0xFF == ord('q'):
-				progTerminate = True
+				#progTerminate = True
 				break
-		elif progTerminate:
-			break
+		#elif progTerminate:
+		#	break
 
 	## When main loop exits --> program terminate and clean up
 
