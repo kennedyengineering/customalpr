@@ -5,13 +5,16 @@ from threading import Thread
 import cv2
 import numpy as np
 import datetime
+from get_system_uptime import getSystemUptime
+from licenseplate_datatype import licensePlate
+import copy
 
 class detectionBox():
 	def __init__(self, cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference):
 		self.cameraName = cameraName
 		self.name = name
-		self.area = area # bounding box for the search
-		self.stream = webcamReference # reference to the video feed
+		self.area = area 					# bounding box for the search
+		self.stream = webcamReference 		# reference to the video feed
 		self.oldDetectedRect = []
 
 		# threads cannot share alpr object, needs its own

@@ -1,5 +1,6 @@
 from threading import Thread
 from get_system_uptime import getSystemUptime
+import copy
 
 class licenseplateService():
 	def __init__(self, detectionboxreference, dbReference):

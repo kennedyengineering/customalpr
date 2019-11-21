@@ -1,6 +1,4 @@
 # imports
-#import yaml
-#import cv2
 from threading import Thread
 import getpass
 
@@ -26,14 +24,7 @@ dbService = databaseService().start()
 while not dbService.ready:
 	continue
 
-# start up ALPR loop on camera
-#progTerminate = False
-'''
-cameraThreads = {}
-for camera in cameraList:
-	cameraThreads[camera.name] = Thread(target=startALPRonCamera, args=(camera, dbService, alprConf, alprRunTime, gui, guiResolution))#.start()
-	cameraThreads[camera.name].start()
-'''
+# launch camera threads for alpr
 cameraThreads = []
 for camera in cameraList:
 	cameraThreads.append(Thread(target=startALPRonCamera, args=(camera, dbService, alprConf, alprRunTime, gui, guiResolution)))
@@ -57,6 +48,7 @@ while 1:
 	if not gui:
 		command = input(">> ")
 		if command == "q":
+			# need to notify thread somehow and quit it
 			break
 		elif command == "help":
 			for option in usableCommands:
@@ -68,5 +60,7 @@ while 1:
 		cameraThreads = [thread for thread in cameraThreads if thread.isAlive()]
 		if len(cameraThreads) == 0:
 			break
+
+# figure out how to tell all threads to terminate
 
 dbService.stop()
