@@ -2,44 +2,70 @@ from video_stream import WebcamVideoStream
 from fps import FPS
 from detection_box import detectionBox
 import cv2
+from threading import Thread
 
-def startALPRonCamera(camera, dbService, alprConf, alprRunTime, gui, guiResolution):
+class startALPRonCamera():
 
-	cam = WebcamVideoStream(src=camera.url).start()
-	guiFPS = FPS().start()
+	def __init__(self, camera, dbService, alprConf, alprRunTime, gui, guiResolution):
 
-	detectionBoxes = []
-	for searchbox in camera.aoiList:
-		for searchBoxName in searchbox:
-			# needs -->  cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference
-			newBox = detectionBox(camera.name, searchBoxName, searchbox[searchBoxName], cam, alprConf, alprRunTime, dbService).start()
-			detectionBoxes.append(newBox)
+		self.killed = False
 
-	# main loop
-	while 1:
-		if gui:
-			frame = cam.read()
-			guiFPS.update()
+		self.camera_name = camera.name
+		self.cam = WebcamVideoStream(src=camera.url)#.start()
+		self.guiFPS = FPS()#.start()
 
-			for box in detectionBoxes:
-				frame = box.draw(frame)
+		self.guiResolution = guiResolution
+		self.gui = gui
 
-			frame = cv2.resize(frame, guiResolution)
-			cv2.imshow(camera.name, frame)
-			if cv2.waitKey(1) & 0xFF == ord('q'):
-				#progTerminate = True
-				break
+		self.detectionBoxes = []
+		for searchbox in camera.aoiList:
+			for searchBoxName in searchbox:
+				# needs -->  cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference
+				newBox = detectionBox(camera.name, searchBoxName, searchbox[searchBoxName], self.cam, alprConf, alprRunTime, dbService)#.start()
+				self.detectionBoxes.append(newBox)
 
-	## When main loop exits --> program terminate and clean up
+	def isAlive(self):
+		return not self.killed
 
-	for box in detectionBoxes:
-		box.stop()
+	def start(self):
+		Thread(target=self.run, args=()).start()
+		return self
 
-	guiFPS.stop()
-	if gui:
-		print(camera.name+" gui", guiFPS.fps())
-	cam.stop()
+	def stop(self):
+		self.killed = True
 
-	cv2.destroyAllWindows()
+	def run(self):
+		# main loop
 
-	return
+		self.cam.start()
+		self.guiFPS.start()
+		for box in self.detectionBoxes:
+			box.start()
+
+		# main loop
+		while not self.killed:
+			if self.gui:
+				frame = self.cam.read()
+				self.guiFPS.update()
+
+				for box in self.detectionBoxes:
+					frame = box.draw(frame)
+
+				frame = cv2.resize(frame, self.guiResolution)
+				cv2.imshow(self.camera_name, frame)
+				if cv2.waitKey(1) & 0xFF == ord('q'):
+					self.killed = True
+
+		## When main loop exits --> program terminate and clean up
+
+		for box in self.detectionBoxes:
+			box.stop()
+
+		self.guiFPS.stop()
+		if self.gui:
+			print(self.camera_name+" gui", self.guiFPS.fps())
+		self.cam.stop()
+
+		cv2.destroyAllWindows()
+
+		return

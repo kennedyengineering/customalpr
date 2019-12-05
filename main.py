@@ -1,5 +1,4 @@
 # imports
-from threading import Thread
 import getpass
 
 # customalpr modules
@@ -27,7 +26,7 @@ while not dbService.ready:
 # launch camera threads for alpr
 cameraThreads = []
 for camera in cameraList:
-	cameraThreads.append(Thread(target=startALPRonCamera, args=(camera, dbService, alprConf, alprRunTime, gui, guiResolution)))
+	cameraThreads.append(startALPRonCamera(camera, dbService, alprConf, alprRunTime, gui, guiResolution))
 for thread in cameraThreads:
 	thread.start()
 
@@ -44,11 +43,15 @@ else:
 usableCommands = {"help": "show all usable commands", "q": "quit the program"}
 
 # main thread loop, handle UI and clean exit
+initial_num_cameras = len(cameraThreads)
+
 while 1:
 	if not gui:
 		command = input(">> ")
 		if command == "q":
 			# need to notify thread somehow and quit it
+			for thread in cameraThreads:
+				thread.stop()
 			break
 		elif command == "help":
 			for option in usableCommands:
@@ -58,9 +61,11 @@ while 1:
 	else:
 		# check for closed threads, exit when no more cameras are working
 		cameraThreads = [thread for thread in cameraThreads if thread.isAlive()]
-		if len(cameraThreads) == 0:
+		if len(cameraThreads) < initial_num_cameras:
+			for thread in cameraThreads:
+				thread.stop()
+
 			break
 
 # figure out how to tell all threads to terminate
-
 dbService.stop()
