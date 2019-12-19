@@ -6,6 +6,7 @@ from database_service import databaseService
 from start_alpr_camera import startALPRonCamera
 from check_alpr import checkALPR
 from load_config_file import loadConfig
+from gui import GUI
 
 # verify ALPR install is working
 alprConf = "/etc/openalpr/openalpr.conf"
@@ -23,12 +24,16 @@ dbService = databaseService().start()
 while not dbService.ready:
 	continue
 
+if gui:
+	render_window = GUI(guiResolution)
 # launch camera threads for alpr
 cameraThreads = []
 for camera in cameraList:
-	cameraThreads.append(startALPRonCamera(camera, dbService, alprConf, alprRunTime, gui, guiResolution))
+	cameraThreads.append(startALPRonCamera(camera, dbService, alprConf, alprRunTime, gui))
 for thread in cameraThreads:
 	thread.start()
+	if gui:
+		render_window.cap_list.append(thread)
 
 # handle console commands in a loop
 if gui:
@@ -60,11 +65,13 @@ while 1:
 
 	else:
 		# check for closed threads, exit when no more cameras are working
-		cameraThreads = [thread for thread in cameraThreads if thread.isAlive()]
-		if len(cameraThreads) < initial_num_cameras:
-			for thread in cameraThreads:
-				thread.stop()
+		#cameraThreads = [thread for thread in cameraThreads if thread.isAlive()]
+		#if len(cameraThreads) < initial_num_cameras:
+		#	for thread in cameraThreads:
+		#		thread.stop()
 
+		#	break
+		if not render_window.update():
 			break
 
 # figure out how to tell all threads to terminate

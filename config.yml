@@ -18,6 +18,15 @@ cameraAddresses:
                     - W: 643
                     - H: 455
 
+   - AXIS:
+        - url: http:/root:pass@10.10.1.230/mjpg/1/video.mjpg
+        - aoi:
+             - axis_box:
+                  - X: 0
+                  - Y: 0
+                  - W: 100
+                  - H: 100
+
 GUItoggle: true
 GUIresolutionX: 800
 GUIresolutionY: 600

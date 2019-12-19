@@ -6,7 +6,7 @@ from threading import Thread
 
 class startALPRonCamera():
 
-	def __init__(self, camera, dbService, alprConf, alprRunTime, gui, guiResolution):
+	def __init__(self, camera, dbService, alprConf, alprRunTime, gui):
 
 		self.killed = False
 
@@ -14,8 +14,7 @@ class startALPRonCamera():
 		self.cam = WebcamVideoStream(src=camera.url)#.start()
 		self.guiFPS = FPS()#.start()
 
-		self.guiResolution = guiResolution
-		self.gui = gui
+		self.gui = gui # boolean
 
 		self.detectionBoxes = []
 		for searchbox in camera.aoiList:
@@ -23,6 +22,15 @@ class startALPRonCamera():
 				# needs -->  cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference
 				newBox = detectionBox(camera.name, searchBoxName, searchbox[searchBoxName], self.cam, alprConf, alprRunTime, dbService)#.start()
 				self.detectionBoxes.append(newBox)
+
+	def getFrame(self):
+		frame = self.cam.read()
+		self.guiFPS.update()
+
+		for box in self.detectionBoxes:
+			frame = box.draw(frame)
+
+		return frame
 
 	def isAlive(self):
 		return not self.killed
@@ -44,17 +52,20 @@ class startALPRonCamera():
 
 		# main loop
 		while not self.killed:
-			if self.gui:
-				frame = self.cam.read()
-				self.guiFPS.update()
+			continue
+			#if self.gui:
+			#	frame = self.cam.read()
+			#	self.guiFPS.update()
+			#	#print("got frame", self.camera_name)
 
-				for box in self.detectionBoxes:
-					frame = box.draw(frame)
+			#	for box in self.detectionBoxes:
+			#		frame = box.draw(frame)
 
-				frame = cv2.resize(frame, self.guiResolution)
-				cv2.imshow(self.camera_name, frame)
-				if cv2.waitKey(1) & 0xFF == ord('q'):
-					self.killed = True
+			#	frame = cv2.resize(frame, self.guiResolution)
+			#	#cv2.imshow(self.camera_name, frame)
+			#	#if cv2.waitKey(1) & 0xFF == ord('q'):
+			#	#	self.killed = True
+			#	self.rendered_frame = frame
 
 		## When main loop exits --> program terminate and clean up
 
