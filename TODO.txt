@@ -1,0 +1,28 @@
+rewrite + clean up
+
+Variable, functions, Filenames --> snake case
+class names --> camel case
+
+indentations
+spacing
+remove commented out code
+document code with comments, put title, made by, when, for
+
+
+Files to clean:
+
+config.yml
+video_stream.py
+start_alpr_camera.py
+main.py
+load_config_file.py
+licenseplate_service.py
+licenseplate_datatype.py
+gui.py
+get_system_uptime.py
+fps.py
+detection_box.py
+database_service.py
+check_alpr.py
+camera_datatype.py
+aoi_finder.py
