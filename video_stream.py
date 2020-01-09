@@ -1,33 +1,33 @@
+# threaded cv2 video_stream class implementation
+# credit to pyImageSearch website for original code
+
+# modified by kennedyengineering for improved redundancy
+
 import cv2
 from threading import Thread
 
-class WebcamVideoStream:
-	# from pyImageSearch website
+
+class videoStream:
 	def __init__(self, src=0):
-		# initialize the variable used to indicate if the thread should
-		# be stopped
-		self.stopped = False
-		# initialize the video camera stream and read the first frame
-		# from the stream
+		self.stopped = False							# indicates if the thread should be stopped
 		self.src = src
-		self.stream = cv2.VideoCapture(src)
-		#(self.grabbed, self.frame) = self.stream.read()
+		self.stream = cv2.VideoCapture(src)				# initialize the video camera stream and read the first frame
 		self.frame = self.grabFrame()
 
 	def start(self):
-		# start the thread to read frames from the video stream
-		Thread(target=self.update, args=()).start()
+
+		Thread(target=self.update, args=()).start()		# start the thread to read frames from the video stream
 		return self
 
 	def grabFrame(self):
 		# handle when self.stream.read() returns None as a frame
-		# network outage redundancy
+		# added network outage redundancy
 		(grabbed, frame) = self.stream.read()
 		while not grabbed:
-			if self.stopped:	# allow clean exit with the rest of the program
+			if self.stopped:							# allow clean exit with the rest of the program
 				return
 
-			self.stream = cv2.VideoCapture(self.src) # initialize a new video stream to compensate for broken network connection, slow an inefficient, can be improved but it works
+			self.stream = cv2.VideoCapture(self.src) 	# initialize a new video stream to compensate for broken network connection
 			(grabbed, frame) = self.stream.read()
 
 		return frame
@@ -35,13 +35,10 @@ class WebcamVideoStream:
 	def update(self):
 		# keep looping infinitely until the thread is stopped
 		while True:
-			# if the thread indicator variable is set, stop the thread
-			if self.stopped:
+			if self.stopped:							# if the thread indicator variable is set, stop the thread
 				return
 
-			# otherwise, read the next frame from the stream
-			self.frame = self.grabFrame()
-			#grabbed, self.frame = self.stream.read()
+			self.frame = self.grabFrame()				# read the next frame from the stream
 
 	def read(self):
 		# return the frame most recently read

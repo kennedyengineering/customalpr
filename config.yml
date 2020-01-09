@@ -1,40 +1,39 @@
+# example customALPR configuration file
+# use template to configure a camera
+# for more information see the README.md
+
 cameraAddresses:
-   #- AXIS1: http:/root:pass@10.10.1.175/mjpg/1/video.mjpg
-   #- AXIS2: http:/root:pass@10.10.1.230/mjpg/1/video.mjpg
-   #- HIK1: http://admin:activeALPR@10.10.1.58/Streaming/channels/101/preview
-   #- TESTVIDEO: "test_clip.MOV"
-   #- HIK2: rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/
-   - HIK:
-        - url: rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/
-        - aoi:
-             - in:
-                  - X: 232
-                  - Y: 614
-                  - W: 643
-                  - H: 455
-             - out:
-                    - X: 900
-                    - Y: 614
-                    - W: 643
-                    - H: 455
+  - HIK:
+    - url: rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/
+    - aoi:
+      - in:
+        - X: 232
+        - Y: 614
+        - W: 643
+        - H: 455
+      - out:
+        - X: 900
+        - Y: 614
+        - W: 643
+        - H: 455
 
-   - AXIS0:
-        - url: http:/root:pass@10.10.1.230/mjpg/1/video.mjpg
-        - aoi:
-             - axis_box0:
-                  - X: 0
-                  - Y: 0
-                  - W: 100
-                  - H: 100
+- AXIS0:
+  - url: http:/root:pass@10.10.1.230/mjpg/1/video.mjpg
+  - aoi:
+    - axis_box0:
+      - X: 0
+      - Y: 0
+      - W: 100
+      - H: 100
 
-   - AXIS1:
-       - url: http:/root:pass@10.10.1.175/mjpg/1/video.mjpg
-       - aoi:
-           - axis_box1:
-               - X: 0
-               - Y: 0
-               - W: 100
-               - H: 100
+- AXIS1:
+  - url: http:/root:pass@10.10.1.175/mjpg/1/video.mjpg
+  - aoi:
+    - axis_box1:
+      - X: 0
+      - Y: 0
+      - W: 100
+      - H: 100
 
 GUItoggle: true
 GUIresolutionX: 800
