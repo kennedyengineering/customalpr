@@ -1,7 +1,11 @@
+# one thread instance to represent the sqlite database
+# slight speed advantage
+
 import sqlite3
 import cv2
 import os
 from threading import Thread
+
 
 class databaseService():
 	def __init__(self):

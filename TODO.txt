@@ -21,7 +21,7 @@ licenseplate_datatype.py    X
 gui.py                      X
 get_system_uptime.py        X
 fps.py                      x
-detection_box.py
+detection_box.py            X
 database_service.py
 check_alpr.py
 camera_datatype.py
@@ -29,3 +29,5 @@ aoi_finder.py
 
 go through and double check one more time
 NEED TO CHANGE FUNCTION NAMES TO SNAKE CASE
+test back at the office, fix all typos
+code review?
