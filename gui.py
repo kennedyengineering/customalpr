@@ -1,8 +1,10 @@
 # simple rendering window for multiple video sources
+
 import cv2
 import pygame as gui
 import numpy
 import math
+
 
 class GUI():
     def __init__(self, resolution):
@@ -12,7 +14,7 @@ class GUI():
         self.clock = gui.time.Clock()
         self.cap_list = []
 
-    def arrayToSurface(self, array):
+    def array_to_surface(self, array):
         array = array.swapaxes(0, 1)
         array = gui.surfarray.make_surface(array)
         return array
@@ -43,7 +45,7 @@ class GUI():
         for cap in self.cap_list:
             frame = cap.getFrame()
 
-            frame = self.arrayToSurface(frame)
+            frame = self.array_to_surface(frame)
             frame = gui.transform.scale(frame, (frame_width, frame_height))
             self.display.blit(frame, (frame_width * iter_col, frame_height * iter_row))
 

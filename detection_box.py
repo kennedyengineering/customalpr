@@ -1,13 +1,17 @@
+# detectionBox class implementation
+# searches for license plates within a given frame buffer
+
 from openalpr import Alpr
 from fps import FPS
-from licenseplate_service import licenseplateService
+from license_plate_service import licensePlateService
 from threading import Thread
 import cv2
 import numpy as np
 import datetime
-from get_system_uptime import getSystemUptime
-from licenseplate_datatype import licensePlate
+from get_system_uptime import get_system_uptime
+from license_plate_datatype import licensePlate
 import copy
+
 
 class detectionBox():
 	def __init__(self, cameraName, name, area, webcamReference, alprconfig, alprruntime, dbReference):
