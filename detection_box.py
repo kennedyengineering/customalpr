@@ -24,8 +24,7 @@ class detectionBox:
 		self.alpr = Alpr("us", config, runtime)
 		self.alpr.set_top_n(1)
 
-		self.fps = FPS()
-		self.fps.start()
+		self.fps = FPS().start_timer()
 
 		self.stopped = False
 
