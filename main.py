@@ -5,18 +5,19 @@ import getpass
 # customARLP modules
 from database_service import databaseService
 from alpr_camera import ALPRCamera
-from check_alpr import checkALPR
-from load_config_file import loadConfig
+from check_alpr import check_alpr
+from load_config_file import load_config
 from gui import GUI
+
 
 # verify openALPR install is working
 conf = "/etc/openalpr/openalpr.conf"
 runtime = "/home/" + str(getpass.getuser()) + "/openalpr/runtime_data"
-if not checkALPR(conf, runtime):
+if not check_alpr(conf, runtime):
 	exit()
 
 # parse settings from config file
-(camera_list, gui, gui_resolution) = loadConfig()
+(camera_list, gui, gui_resolution) = load_config()
 
 # start the database service
 dbService = databaseService().start()
@@ -37,12 +38,12 @@ for thread in camera_threads:
 
 # handle console commands
 if gui:
-	print("Starting in GUI mode")
-	print("Resolution: ", gui_resolution)
+	print("starting in GUI mode")
+	print("resolution: ", gui_resolution)
 	print("press 'q' to exit")
 	print()
 else:
-	print("Starting in CONSOLE mode")
+	print("starting in CONSOLE mode")
 	print("type 'help' for a list of commands")
 	print()
 

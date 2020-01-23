@@ -8,7 +8,7 @@ from camera_datatype import cameraDatatype
 def load_config(path="config.yml"):
     # load config file data
     print("")
-    print("Loading config file")
+    print("loading config file")
 
     config_file_path = path
     with open(config_file_path, 'r') as stream:
@@ -37,6 +37,6 @@ def load_config(path="config.yml"):
 
         camera_list.append(cameraDatatype(camera_name, camera_url, camera_aoi))
 
-    print("Config file loaded successfully")
+    print("config file loaded")
 
     return camera_list, gui, gui_resolution
