@@ -17,23 +17,23 @@ cameraAddresses:
         - W: 643
         - H: 455
 
-- AXIS0:
-  - url: http:/root:pass@10.10.1.230/mjpg/1/video.mjpg
-  - aoi:
-    - axis_box0:
-      - X: 0
-      - Y: 0
-      - W: 100
-      - H: 100
+  - AXIS0:
+    - url: http:/root:pass@10.10.1.230/mjpg/1/video.mjpg
+    - aoi:
+      - axis_box0:
+        - X: 0
+        - Y: 0
+        - W: 100
+        - H: 100
 
-- AXIS1:
-  - url: http:/root:pass@10.10.1.175/mjpg/1/video.mjpg
-  - aoi:
-    - axis_box1:
-      - X: 0
-      - Y: 0
-      - W: 100
-      - H: 100
+  - AXIS1:
+    - url: http:/root:pass@10.10.1.175/mjpg/1/video.mjpg
+    - aoi:
+      - axis_box1:
+        - X: 0
+        - Y: 0
+        - W: 100
+        - H: 100
 
 GUItoggle: true
 GUIresolutionX: 800
