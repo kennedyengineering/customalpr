@@ -19,7 +19,7 @@ class ALPRCamera:
         self.gui = gui
 
         self.detection_boxes = []
-        for search_box in camera.aoiList:
+        for search_box in camera.aoi_list:
             for search_box_name in search_box:
                 new_box = detectionBox(camera.name, search_box_name, search_box[search_box_name],
                                        self.cam, alpr_config, alpr_run_time, db_service)
