@@ -14,8 +14,7 @@ class GUI:
         self.clock = gui.time.Clock()
         self.cap_list = []
 
-    @staticmethod
-    def array_to_surface(array):
+    def array_to_surface(self, array):
         array = array.swapaxes(0, 1)
         array = gui.surfarray.make_surface(array)
         return array
