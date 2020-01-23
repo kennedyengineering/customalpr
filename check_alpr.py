@@ -4,7 +4,7 @@
 from openalpr import Alpr
 
 
-def checkALPR(alpr_conf, alpr_run_time):
+def check_alpr(alpr_conf, alpr_run_time):
     # check if openALPR configuration files and install are OK
     print("loading Alpr")
     print("openALPR config path: ", alpr_conf)

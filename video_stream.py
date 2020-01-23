@@ -12,14 +12,14 @@ class videoStream:
 		self.stopped = False							# indicates if the thread should be stopped
 		self.src = src
 		self.stream = cv2.VideoCapture(src)				# initialize the video camera stream and read the first frame
-		self.frame = self.grabFrame()
+		self.frame = self.grab_frame()
 
 	def start(self):
 
 		Thread(target=self.update, args=()).start()		# start the thread to read frames from the video stream
 		return self
 
-	def grabFrame(self):
+	def grab_frame(self):
 		# handle when self.stream.read() returns None as a frame
 		# added network outage redundancy
 		(grabbed, frame) = self.stream.read()
@@ -38,7 +38,7 @@ class videoStream:
 			if self.stopped:							# if the thread indicator variable is set, stop the thread
 				return
 
-			self.frame = self.grabFrame()				# read the next frame from the stream
+			self.frame = self.grab_frame()				# read the next frame from the stream
 
 	def read(self):
 		# return the frame most recently read

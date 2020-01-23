@@ -5,7 +5,7 @@ import yaml
 from camera_datatype import cameraDatatype
 
 
-def loadConfig(path="config.yml"):
+def load_config(path="config.yml"):
     # load config file data
     print("")
     print("Loading config file")

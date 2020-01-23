@@ -8,7 +8,7 @@ import os
 from threading import Thread
 
 
-class databaseService():
+class databaseService:
 	def __init__(self):
 		# The purpose of this thread is to control the writing to the database from multiple locations
 		# This module prevents writes occurring at the same time
@@ -21,7 +21,7 @@ class databaseService():
 		# check if database already exists, if not, initialize it
 		print(" ")
 		print("Connecting to database...")
-		if (os.path.exists(self.database_name) == False): # true if file exists
+		if not os.path.exists(self.database_name):  # true if file exists
 			print("No database found, initializing...")
 			connection = sqlite3.connect(self.database_name)
 			cursor = connection.cursor()
@@ -53,7 +53,7 @@ class databaseService():
 		Thread(target=self.update, args=()).start()
 		return self
 
-	def writeToDatabase(self, license_plate):
+	def write_to_database(self, license_plate):
 		# license plate is of the licensePlate class/ datatype
 		self.entry_list.append(license_plate)
 

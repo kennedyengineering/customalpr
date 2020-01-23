@@ -12,7 +12,7 @@ from get_system_uptime import get_system_uptime
 from license_plate_datatype import licensePlate
 
 
-class detectionBox():
+class detectionBox:
 	def __init__(self, camera_name, name, area, video_stream_reference, config, runtime, dbReference):
 		self.camera_name = camera_name
 		self.name = name

@@ -1,11 +1,11 @@
 # license plate service class
 
 from threading import Thread
-from get_system_uptime import getSystemUptime
+from get_system_uptime import get_system_uptime
 import copy
 
 
-class licensePlateService():
+class licensePlateService:
 	def __init__(self, detection_box_reference, db_reference):
 		self.detection_box_reference = detection_box_reference
 		self.db_reference = db_reference
@@ -56,7 +56,7 @@ class licensePlateService():
 
 			# find system difference with the LAST plate in the list. operate if self.orderedLicensePlateList is not empty
 			if len(self.ordered_license_plate_list) != 0:
-				system_difference = getSystemUptime() - self.ordered_license_plate_list[len(self.ordered_license_plate_list)-1].timeSpotted
+				system_difference = get_system_uptime() - self.ordered_license_plate_list[len(self.ordered_license_plate_list)-1].timeSpotted
 				if system_difference >= max_wait_time:
 					time_differential_indexes.append((len(self.ordered_license_plate_list)-1))
 

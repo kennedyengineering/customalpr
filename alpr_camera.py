@@ -8,7 +8,7 @@ import cv2
 from threading import Thread
 
 
-class ALPRCamera():
+class ALPRCamera:
     def __init__(self, camera, db_service, alpr_config, alpr_run_time, gui):
         self.stopped = False
 
@@ -25,7 +25,7 @@ class ALPRCamera():
                                        self.cam, alpr_config, alpr_run_time, db_service)
                 self.detection_boxes.append(new_box)
 
-    def getFrame(self):
+    def get_frame(self):
         frame = self.cam.read()
         self.guiFPS.update()
 
@@ -34,7 +34,7 @@ class ALPRCamera():
 
         return frame
 
-    def isAlive(self):
+    def is_alive(self):
         return not self.stopped
 
     def start(self):

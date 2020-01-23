@@ -12,18 +12,18 @@ its customALPR
 Files to clean:
 
 config.yml                  X
-video_stream.py             X
-start_alpr_camera.py        X
+video_stream.py             X   X
+start_alpr_camera.py        X   X
 main.py                     X
-load_config_file.py         X
-licenseplate_service.py     X
+load_config_file.py         X   X
+licenseplate_service.py     X   ?
 licenseplate_datatype.py    X
-gui.py                      X
-get_system_uptime.py        X
+gui.py                      X   X
+get_system_uptime.py        X   X
 fps.py                      x
-detection_box.py            X
-database_service.py         X
-check_alpr.py               X
+detection_box.py            X   X
+database_service.py         X   X
+check_alpr.py               X   X
 camera_datatype.py          X
 aoi_finder.py               X
 
@@ -31,3 +31,5 @@ go through and double check one more time
 NEED TO CHANGE FUNCTION NAMES TO SNAKE CASE
 test back at the office, fix all typos
 code review?
+
+remove unneeded parenthesis

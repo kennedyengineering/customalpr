@@ -6,7 +6,7 @@ import numpy
 import math
 
 
-class GUI():
+class GUI:
     def __init__(self, resolution):
         gui.init()
         self.display = gui.display.set_mode(resolution, gui.RESIZABLE)
@@ -14,7 +14,8 @@ class GUI():
         self.clock = gui.time.Clock()
         self.cap_list = []
 
-    def array_to_surface(self, array):
+    @ staticmethod
+    def array_to_surface(array):
         array = array.swapaxes(0, 1)
         array = gui.surfarray.make_surface(array)
         return array
