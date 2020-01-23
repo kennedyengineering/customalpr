@@ -13,7 +13,7 @@ from license_plate_datatype import licensePlate
 
 
 class detectionBox:
-	def __init__(self, camera_name, name, area, video_stream_reference, config, runtime, dbReference):
+	def __init__(self, camera_name, name, area, video_stream_reference, config, runtime, db_reference):
 		self.camera_name = camera_name
 		self.name = name
 		self.area = area 							# bounding box for the search
@@ -24,14 +24,15 @@ class detectionBox:
 		self.alpr = Alpr("us", config, runtime)
 		self.alpr.set_top_n(1)
 
-		self.fps = FPS().start()
+		self.fps = FPS()
+		self.fps.start()
 
 		self.stopped = False
 
 		# stores license plate objects
 		self.license_plate_list = []
 
-		self.licensePlateService = licensePlateService(self, dbReference).start()
+		self.licensePlateService = licensePlateService(self, db_reference).start()
 
 	def start(self):
 		Thread(target=self.update, args=()).start()
