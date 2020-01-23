@@ -1,5 +1,6 @@
 # one thread instance to represent the sqlite database
 # slight speed advantage
+# is redundant. Should replace with SQLalchemy or the like
 
 import sqlite3
 import cv2
@@ -9,37 +10,32 @@ from threading import Thread
 
 class databaseService():
 	def __init__(self):
-		# WARNING!!
 		# The purpose of this thread is to control the writing to the database from multiple locations
-		# This module prevents writes occuring at the same time
+		# This module prevents writes occurring at the same time
 		# as well as handling other aspects of the database
 		# technically sqlite3 can have multiple connections, but this seems like a safe idea
 
-		# there should only be ONE databaseService initialized!!!
-		self.databaseName = "database/database.db"
+		# there should only be ONE databaseService initialized
+		self.database_name = "database/database.db"
+
 		# check if database already exists, if not, initialize it
 		print(" ")
 		print("Connecting to database...")
-		if (os.path.exists(self.databaseName) == False): # true if file exists
+		if (os.path.exists(self.database_name) == False): # true if file exists
 			print("No database found, initializing...")
-			connection = sqlite3.connect(self.databaseName)
+			connection = sqlite3.connect(self.database_name)
 			cursor = connection.cursor()
 
-			# need to record everything in the licenseplate class
-			# - plate number <string>
-			# - path to plate image (one image will be saved) <string>
-			# - time spotted (range?) (datetime) <?>
-			# - camera name <string>
-			# - detectorBoxName (IN/OUT) <string>
+			# need to record everything in the license plate class
 
-			tableInitializationCommand = """CREATE TABLE licenseplates (
+			table_initialization_command = """CREATE TABLE licenseplates (
 			plate_number VARCHAR(20),
 			plate_image_path VARCHAR(200),
 			time_spotted VARCHAR(50),
 			camera_name VARCHAR(20),
 			detection_box_name VARCHAR(20));"""
 
-			cursor.execute(tableInitializationCommand)
+			cursor.execute(table_initialization_command)
 			connection.commit()
 			connection.close()
 
@@ -48,7 +44,7 @@ class databaseService():
 			print("Database found")
 
 		# buffer of data entries to be entered sequentially, contains licensePlate objects
-		self.entryList = []
+		self.entry_list = []
 
 		self.stopped = False
 		self.ready = False
@@ -57,15 +53,15 @@ class databaseService():
 		Thread(target=self.update, args=()).start()
 		return self
 
-	def writeToDatabase(self, licensePlate):
-		# licenseplate is of the licensePlate class/ datatype
-		self.entryList.append(licensePlate)
+	def writeToDatabase(self, license_plate):
+		# license plate is of the licensePlate class/ datatype
+		self.entry_list.append(license_plate)
 
 	def update(self):
 		self.ready = True
-		# SQLite objects can only be called in the thread that they were created in!
-	 	# create SQL objects here
-		connection = sqlite3.connect(self.databaseName)
+		# SQLite objects can only be called in the thread that they were created in
+
+		connection = sqlite3.connect(self.database_name)
 		cursor = connection.cursor()
 		print("Connected to database")
 		print(" ")
@@ -74,24 +70,23 @@ class databaseService():
 			if self.stopped:
 				break
 
-			# store licenseplate in database
-			numCommits = 0
-			for plate in self.entryList:
-				# find a way to delete the licenseplate objects and release memory, later... DO in licenseplateservice
+			# store license plate in database
+			num_commits = 0
+			for plate in self.entry_list:
 				# store image in IMAGES directory, get path
-				directoryPath = "database/Images/" + str(plate.cameraName) + " " + str(plate.detectorName) + " " + str(plate.datetime).replace(".", "-") + " " + str(plate.number) + ".png"
+				directory_path = "database/Images/" + str(plate.camera_name) + " " + str(plate.detector_name) + " " + str(plate.datetime).replace(".", "-") + " " + str(plate.number) + ".png"
 				print("Found license plate:" + str(plate.number))
-				print("Saved image to: " + directoryPath)
-				cv2.imwrite(directoryPath, plate.image)
+				print("Saved image to: " + directory_path)
+				cv2.imwrite(directory_path, plate.image)
 
-				entryCommand = 'INSERT INTO licenseplates VALUES("{}", "{}", "{}", "{}", "{}")'.format(str(plate.number), directoryPath, str(plate.datetime), plate.cameraName, plate.detectorName)
-				cursor.execute(entryCommand)
+				entry_command = 'INSERT INTO licenseplates VALUES("{}", "{}", "{}", "{}", "{}")'.format(str(plate.number), directory_path, str(plate.datetime), plate.camera_name, plate.detector_name)
+				cursor.execute(entry_command)
 				connection.commit()
 
-				numCommits += 1
+				num_commits += 1
 
-			if numCommits == len(self.entryList):
-				self.entryList = []
+			if num_commits == len(self.entry_list):
+				self.entry_list = []
 
 		# clean up, the thread is dead, long live the thread!
 		connection.close()		# close the connection to the database
