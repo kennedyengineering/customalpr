@@ -15,7 +15,7 @@ class GUI:
         self.cap_list = []
 
     @staticmethod
-    def array_to_surface(self, array):
+    def array_to_surface(array):
         array = array.swapaxes(0, 1)
         array = gui.surfarray.make_surface(array)
         return array
