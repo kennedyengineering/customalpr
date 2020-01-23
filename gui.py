@@ -14,8 +14,8 @@ class GUI:
         self.clock = gui.time.Clock()
         self.cap_list = []
 
-    @ staticmethod
-    def array_to_surface(array):
+    @staticmethod
+    def array_to_surface(self, array):
         array = array.swapaxes(0, 1)
         array = gui.surfarray.make_surface(array)
         return array
@@ -44,7 +44,7 @@ class GUI:
         iter_col = 0
         iter_row = 0
         for cap in self.cap_list:
-            frame = cap.getFrame()
+            frame = cap.get_frame()
 
             frame = self.array_to_surface(frame)
             frame = gui.transform.scale(frame, (frame_width, frame_height))
