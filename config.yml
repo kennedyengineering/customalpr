@@ -35,6 +35,6 @@ cameraAddresses:
         - W: 100
         - H: 100
 
-GUItoggle: true
+GUItoggle: false
 GUIresolutionX: 800
 GUIresolutionY: 600

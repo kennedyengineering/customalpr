@@ -12,15 +12,11 @@ class ALPRCamera:
     def __init__(self, camera, db_service, alpr_config, alpr_run_time, gui):
         self.stopped = False
 
-        print("pre cam")
         self.camera_name = camera.name
         self.cam = videoStream(src=camera.url)
-        print("post cam")
-
 
         self.guiFPS = FPS()
         self.gui = gui
-        print("starting detection box")
         self.detection_boxes = []
         for search_box in camera.aoi_list:
             for search_box_name in search_box:

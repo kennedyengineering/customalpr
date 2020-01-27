@@ -30,7 +30,6 @@ if gui:
 	render_window = GUI(gui_resolution)
 
 camera_threads = []
-print(camera_list)
 for camera in camera_list:
 	camera_threads.append(ALPRCamera(camera, dbService, conf, runtime, gui))
 
