@@ -32,12 +32,8 @@ if gui:
 camera_threads = []
 print(camera_list)
 for camera in camera_list:
-	print(camera)
-	alprcam = ALPRCamera(camera, dbService, conf, runtime, gui)
-	camera_threads.append(alprcam)
-	
-	#camera_threads.append(ALPRCamera(camera, dbService, conf, runtime, gui))
-print("cam done")
+	camera_threads.append(ALPRCamera(camera, dbService, conf, runtime, gui))
+
 for thread in camera_threads:
 	thread.start()
 	if gui:

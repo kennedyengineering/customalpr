@@ -20,7 +20,6 @@ class GUI:
         return array
 
     def update(self):
-        print("updating gui")
         # handle events
         for event in gui.event.get():
             if event.type == gui.QUIT:
@@ -36,7 +35,8 @@ class GUI:
         num_cams = len(self.cap_list)
         num_cols = 4  # how to make this dynamic? # calculate based on num_cams
         num_rows = math.ceil(num_cams / num_cols)  # is this even right?
-        if num_rows == 1: num_rows += 1
+        if num_rows == 1:
+            num_rows += 1
         screen_width, screen_height = gui.display.get_surface().get_size()
         frame_width = int(screen_width / num_cols)
         frame_height = int(screen_height / num_rows)

@@ -12,15 +12,9 @@ class videoStream:
 	def __init__(self, src=0):
 		self.stopped = False							# indicates if the thread should be stopped
 		self.src = src
-		print("pre video capture")
 		self.stream = cv2.VideoCapture(src)				# initialize the video camera stream and read the first frame
-		
-		print("post video capture")
-		#self.frame = None #self.grab_frame()
-		#print("post video capture")
 
-		# resolution can change... dont know if thats a problem
-		self.frame = np.zeros((1920, 1080, 3), np.uint8) # create a blank image
+		self.frame = np.zeros((1920, 1080, 3), np.uint8)  # create a blank image, resolution 1920x1080
 
 
 	def start(self):
