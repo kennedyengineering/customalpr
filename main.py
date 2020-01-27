@@ -28,9 +28,16 @@ while not dbService.ready:
 render_window = None
 if gui:
 	render_window = GUI(gui_resolution)
+
 camera_threads = []
+print(camera_list)
 for camera in camera_list:
-	camera_threads.append(ALPRCamera(camera, dbService, conf, runtime, gui))
+	print(camera)
+	alprcam = ALPRCamera(camera, dbService, conf, runtime, gui)
+	camera_threads.append(alprcam)
+	
+	#camera_threads.append(ALPRCamera(camera, dbService, conf, runtime, gui))
+print("cam done")
 for thread in camera_threads:
 	thread.start()
 	if gui:

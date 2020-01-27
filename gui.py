@@ -20,6 +20,7 @@ class GUI:
         return array
 
     def update(self):
+        print("updating gui")
         # handle events
         for event in gui.event.get():
             if event.type == gui.QUIT:

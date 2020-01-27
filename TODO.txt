@@ -33,3 +33,14 @@ test back at the office, fix all typos
 code review?
 
 remove unneeded parenthesis
+
+
+
+dear future me,
+
+videoStream class, give desired resolution of camera + handle resizing in class so it returns image of desired size
+Also, and more importantly, initialize self.frame with an array(np?) that is filled with zeros to appear like a black image until it is replaced by a real frame
+
+cannot call NoneType error due to function definition having the same name as a variable
+
+once code is fixed and working, finalize changes on pycharm environment on the laptop and push from there. delete the experimented on portion of code on the imac b/c it is no longer clean.
