@@ -36,7 +36,7 @@ class licensePlateService:
 
 				# use licensePlateList like a buffer of new data to be actively sorted into a new ordered list
 				# order based on time stamp
-				temp_license_plate_list.sort(key=lambda x: x.timeSpotted)
+				temp_license_plate_list.sort(key=lambda x: x.time_spotted)
 
 				# add ordered list to total list, merge
 				self.ordered_license_plate_list += temp_license_plate_list
@@ -50,13 +50,13 @@ class licensePlateService:
 				if i == len(self.ordered_license_plate_list)-1:
 					break
 
-				difference = self.ordered_license_plate_list[i+1].timeSpotted - self.ordered_license_plate_list[i].timeSpotted
+				difference = self.ordered_license_plate_list[i+1].time_spotted - self.ordered_license_plate_list[i].time_spotted
 				if difference >= min_time_differential:
 					time_differential_indexes.append(i)
 
 			# find system difference with the LAST plate in the list. operate if self.orderedLicensePlateList is not empty
 			if len(self.ordered_license_plate_list) != 0:
-				system_difference = get_system_uptime() - self.ordered_license_plate_list[len(self.ordered_license_plate_list)-1].timeSpotted
+				system_difference = get_system_uptime() - self.ordered_license_plate_list[len(self.ordered_license_plate_list)-1].time_spotted
 				if system_difference >= max_wait_time:
 					time_differential_indexes.append((len(self.ordered_license_plate_list)-1))
 
