@@ -31,8 +31,8 @@ class licensePlateService:
 				self.notified = False
 
 				# copy contents in to a buffer and flush the original buffer
-				temp_license_plate_list = self.detection_box_reference.licenseplateList
-				self.detection_box_reference.licenseplateList = []
+				temp_license_plate_list = self.detection_box_reference.license_plate_list
+				self.detection_box_reference.license_plate_list = []
 
 				# use licensePlateList like a buffer of new data to be actively sorted into a new ordered list
 				# order based on time stamp
@@ -86,7 +86,7 @@ class licensePlateService:
 					if plate.confidence > most_confident_plate.confidence:
 						most_confident_plate = plate
 
-				self.db_reference.writeToDatabase(copy.deepcopy(most_confident_plate))
+				self.db_reference.write_to_database(copy.deepcopy(most_confident_plate))
 
 			self.groups_list = []
 
