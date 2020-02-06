@@ -39,3 +39,6 @@ remove unneeded parenthesis
 cannot call NoneType error due to function definition having the same name as a variable
 
 once code is fixed and working, finalize changes on pycharm environment on the laptop and push from there. delete the experimented on portion of code on the imac b/c it is no longer clean.
+
+resize + save image of entire car, remove rectangles from saved image
+
