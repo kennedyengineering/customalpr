@@ -2,7 +2,7 @@
 # use template to configure a camera
 # for more information see the README.md
 
-cameraAddresses:
+camera_addresses:
   - HIK:
     - url: rtsp://LPRuser:ThisISfun1@10.48.140.5:554/Streaming/channels/101/
     - aoi:
@@ -35,6 +35,6 @@ cameraAddresses:
         - W: 100
         - H: 100
 
-GUItoggle: true
-GUIresolutionX: 800
-GUIresolutionY: 600
+GUI_toggle: true
+GUI_resolution_X: 800
+GUI_resolution_Y: 600

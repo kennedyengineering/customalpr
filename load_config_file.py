@@ -14,13 +14,13 @@ def load_config(path="config.yml"):
     with open(config_file_path, 'r') as stream:
         config = yaml.load(stream)
 
-    gui = config['GUItoggle']
-    gui_resolution_x = config['GUIresolutionX']
-    gui_resolution_y = config['GUIresolutionY']
+    gui = config['GUI_toggle']
+    gui_resolution_x = config['GUI_resolution_X']
+    gui_resolution_y = config['GUI_resolution_Y']
     gui_resolution = (gui_resolution_x, gui_resolution_y)
 
     camera_list = []
-    for camera in config['cameraAddresses']:
+    for camera in config['camera_addresses']:
         for name in camera:
             camera_id = camera[name]
             camera_name = name

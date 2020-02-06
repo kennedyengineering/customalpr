@@ -10,6 +10,7 @@ def check_alpr(alpr_conf, alpr_run_time):
     print("openALPR config path: ", alpr_conf)
     print("openALPR runtime path: ", alpr_run_time)
     alpr = Alpr("us", alpr_conf, alpr_run_time)
+
     if not alpr.is_loaded():
         print("openALPR failed to load")
         del alpr

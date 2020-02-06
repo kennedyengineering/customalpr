@@ -16,9 +16,7 @@ class videoStream:
 
 		self.frame = np.zeros((1920, 1080, 3), np.uint8)  # create a blank image, resolution 1920x1080
 
-
 	def start(self):
-
 		Thread(target=self.update, args=()).start()		# start the thread to read frames from the video stream
 		return self
 
