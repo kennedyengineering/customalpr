@@ -10,6 +10,7 @@ import numpy as np
 import datetime
 from get_system_uptime import get_system_uptime
 from license_plate_datatype import licensePlate
+import copy
 
 
 class detectionBox:
@@ -46,6 +47,7 @@ class detectionBox:
 
 			# grab the most recent frame from the video thread
 			frame = self.stream.read()
+			frame_copy = copy.copy(frame)
 			cropped_frame = frame[int(self.area[1]):int(self.area[1] + self.area[3]), int(self.area[0]):int(self.area[0] + self.area[2])]
 
 			# run the detector
@@ -69,7 +71,8 @@ class detectionBox:
 
 					# convert lpr results into a license plate object and store in license_plate_list
 					plate_number = plate['plate']
-					plate_image = frame[int(bounding_rect[1]):int(bounding_rect[1] + bounding_rect[3]), int(bounding_rect[0]):int(bounding_rect[0] + bounding_rect[2])]
+					#plate_image = frame[int(bounding_rect[1]):int(bounding_rect[1] + bounding_rect[3]), int(bounding_rect[0]):int(bounding_rect[0] + bounding_rect[2])]
+					plate_image = cv2.resize(frame_copy, (720, 480), interpolation=cv2.INTER_AREA)
 					plate_datetime = datetime.datetime.now()
 					plate_time = get_system_uptime()
 					plate_confidence = plate['confidence']
