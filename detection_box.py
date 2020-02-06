@@ -47,7 +47,7 @@ class detectionBox:
 
 			# grab the most recent frame from the video thread
 			frame = self.stream.read()
-			frame_copy = copy.copy(frame)
+			frame_copy = copy.deepcopy(frame)
 			cropped_frame = frame[int(self.area[1]):int(self.area[1] + self.area[3]), int(self.area[0]):int(self.area[0] + self.area[2])]
 
 			# run the detector

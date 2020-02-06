@@ -42,4 +42,6 @@ once code is fixed and working, finalize changes on pycharm environment on the l
 
 resize + save image of entire car, remove rectangles from saved image   X
 
-this program fills the database, another program should be reading it and figuring out who is where and when
+this program fills the database, another program should be reading it and figuring out who is where and when???
+
+test multiple cameras saving to database
