@@ -9,39 +9,27 @@ in a SQLite database (database/database.db) and an image of the license plate (d
 how the configuration file is set. customALPR is capable of handling several cameras in one instance, with each camera running on a 
 separate thread, and all the data stored in one database.
 
-### Prerequisites
+### Dependencies
 
-Uses python3 (Tested with 3.5.2) and tested on Ubuntu 16.04
+customalpr is tested to work under Python 3.x. See the requirements via the following command:
 
- - opencv-contrib-python (Tested with 4.1.0.25)
- - numpy		 (Tested with 1.16.4)
- - openalpr		 (Tested with 1.0)	
- - PyYAML		 (Tested with 5.1.1)
- - sqlite3		 (Tested with 3.11)
+```
+cat requirements.txt
+```
 
 ### Installing
 
-Installing PyYAML
 ```
-pip3 install pyyaml
-```
-
-Installing sqlite3
-```
-sudo apt install sqlite3 libsqlite3-dev
+python3 -v venv venv
+. venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Installing OpenCV
-```
-pip3 install opencv-contrib-python
-```
-
-Installing OpenALPR
+### Installing OpenALPR
 
 Follow the "Easy Way (Ubuntu 14.04+)" installation tutorial. Not "The Easiest Way" installation tutorial. That will not work. [link](https://github.com/openalpr/openalpr/wiki/Compilation-instructions-(Ubuntu-Linux))
 
 If there are any issues this thread is helpful. [link](https://github.com/openalpr/openalpr/issues/660)
-
 
 ## Configuration
 
@@ -68,6 +56,7 @@ GUItoggle: true
 GUIresolutionX: 800
 GUIresolutionY: 600
 ```
+
 Breaking it down:
 
 *cameraAddresses* - the list that contains camera definitions <br />
@@ -85,6 +74,7 @@ Simply run main.py with python3
 ```
 python3 main.py
 ```
+
 ## Authors
 
 * **Braedan Kennedy** - *Initial work* - [kennedyengineering](https://github.com/kennedyengineering)
